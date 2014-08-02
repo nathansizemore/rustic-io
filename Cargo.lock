@@ -1,0 +1,12 @@
+[root]
+name = "rustic-io"
+version = "0.0.0"
+dependencies = [
+ "rust-crypto 0.1.0 (git+https://github.com/DaGenix/rust-crypto.git#b208f9daf5d405148d80b1e3edd2c4acfb84a0d6)",
+]
+
+[[package]]
+name = "rust-crypto"
+version = "0.1.0"
+source = "git+https://github.com/DaGenix/rust-crypto.git#b208f9daf5d405148d80b1e3edd2c4acfb84a0d6"
+

@@ -9,13 +9,14 @@ use std::io::{TcpListener, TcpStream};
 use std::io::{Listener, Acceptor};
 use rust_crypto::digest::Digest;
 use rust_crypto::sha1::Sha1;
-use serialize::base64::{Config, ToBase64};
+use serialize::base64::{ToBase64, STANDARD};
 
 
 
 
 //Entry point
 fn main() {
+
     //Setup socket
     let listener = TcpListener::bind("127.0.0.1", 1338);
     let mut acceptor = listener.listen();
@@ -74,6 +75,9 @@ fn accept_incoming_connection(mut stream: TcpStream, key: &str) {
     let hashed_value = (*sha).result_str();
 
     //Base64 encode the hash
+    let mut config = STANDARD;
+    let mut based2 = out.to_base64(config);
+    println!("From &[u8] out: {}", based2);
 
 
     //Build response header with accept key
@@ -81,6 +85,7 @@ fn accept_incoming_connection(mut stream: TcpStream, key: &str) {
 
     //Echo back accept response
 }
+
 
 
 
