@@ -1,0 +1,14 @@
+<html>
+<head>
+</head>
+<body>
+    <script>
+        var socket = new WebSocket("ws://127.0.0.1:1338");
+
+        socket.onopen = function(event) {
+            console.log(event);
+            socket.send("Rust is fucking sweet!");
+        }
+    </script>
+</body>
+</html
