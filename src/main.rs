@@ -39,7 +39,15 @@ fn process_incoming_connection(mut stream: TcpStream) {
 
     //Grab the incoming buffer
     let mut buffer = [0, ..1024];
-    stream.read(buffer);
+    match stream.read(buffer) {
+        Ok(result) => {
+            println!("OK: {}", result)
+        }
+        Err(e) => {
+            println!("Error: {}", e)
+        }
+    }
+    //stream.close_read();
     
     //Parse request for Sec-WebSocket-Key
     match str::from_utf8(buffer) {
@@ -59,8 +67,6 @@ fn process_incoming_connection(mut stream: TcpStream) {
 }
 
 fn accept_incoming_connection(mut stream: TcpStream, key: &str) {
-    println!("Key found!");
-    println!("{}", key);
 
     //Add websocket api key
     let mut pre_hash = String::from_str(key);
@@ -72,18 +78,36 @@ fn accept_incoming_connection(mut stream: TcpStream, key: &str) {
     let mut s = pre_hash.as_slice();
     (*sha).input_str(s);
     sha.result(out);
-    let hashed_value = (*sha).result_str();
 
     //Base64 encode the hash
     let mut config = STANDARD;
     let mut based2 = out.to_base64(config);
-    println!("From &[u8] out: {}", based2);
-
 
     //Build response header with accept key
+    let mut accept_header = String::from_str("HTTP/1.1 101 Switching Protocols\r\n");
+    accept_header.push_str("Upgrade: websocket\r\n");
+    accept_header.push_str("Connection: Upgrade\r\n");
+    accept_header.push_str("Sec-WebSocket-Accept: ");
+    unsafe
+    {
+        accept_header.push_bytes(based2.as_mut_bytes());
+    }
+    accept_header.push_str("\r\n");
+    //accept_header.push_str("Sec-WebSocket-Protocol: chat\r\n");
+    accept_header.push_str("\r\n");
+    println!("{}", accept_header);    
 
 
     //Echo back accept response
+    match stream.write(accept_header.as_bytes()) {
+        Ok(result) => {
+            println!("stream write ok: {}", result)
+        }
+        Err(e) => {
+            println!("Error on stream.write: {}", e)
+        }
+    }
+    //stream.close_write();
 }
 
 
