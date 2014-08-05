@@ -17,11 +17,13 @@ mod rustic_io;
 
 fn main() {
     let mut server = rustic_io::listen("127.0.0.1", 1338);
-    rustic_io::on_connection(server, || {
-        // Wizard magic
-    });
+    rustic_io::on_connection(server, event_loop);
 
 
+}
+
+fn event_loop() {
+    // Do important shit
 }
 
 /*

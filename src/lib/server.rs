@@ -29,6 +29,7 @@ use std::io::{TcpListener, TcpStream};
 use std::io::{Listener, Acceptor};
 use self::rust_crypto::digest::Digest;
 use self::rust_crypto::sha1::Sha1;
+use self::serialize::base64::{ToBase64, STANDARD};
 
 
 /*
@@ -132,15 +133,29 @@ impl Server {
      * 4.) Return Base64 encoded bytes, not string
      */
     fn return_accept_header(&self, stream: TcpStream, key: &str) {
+        let mut pre_hash = String::from_str(key);
+        pre_hash.push_str("258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
+
+        let mut out = [0u8, ..20];
+        self.sha1_hash(pre_hash.as_slice(), out);
 
     }
 
-    fn sha1_hash(value: &str) -> [u8, ..20] {
-        let mut out = [0u8, ..20];
+    fn sha1_hash(&self, value: &str, out: &mut [u8]) {
         let mut sha = box Sha1::new();
         (*sha).input_str(value);
         sha.result(out);
-        return out;
+    }
+
+    fn base64_key<'a>(value: &mut [u8]) -> &'a [u8] {
+        let mut config = STANDARD;
+        let bytes = value.to_base64(config);
+        let s;
+        unsafe
+        {
+            s = bytes.as_mut_bytes();
+        }
+        return s;
     }
 }
 

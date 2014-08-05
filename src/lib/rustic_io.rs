@@ -38,10 +38,14 @@ pub fn listen(ip_addr: &str, port_num: u16) -> server::Server {
 }
 
 /*
- *
+ * Assigns the event loop to the passed server struct
+ * Event loop does not fire, but keeps same lifetime as server
  */
-pub fn on_connection(server: server::Server, event_loop: || -> ()) {
+pub fn on_connection(server: server::Server, event_loop: fn() -> ()) {
+    // TODO - Implement a function in Server that accepts function pointer
+    // and assigns it to event_loop property
     
+    // server.event_loop = event_loop;
 }
 
 /*
