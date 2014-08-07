@@ -23,24 +23,20 @@
 
 
 
-use std::io::{TcpStream};
-	
-pub struct Socket<'a> {
-	pub id: String,
-	pub stream: TcpStream
+use std::str;
+
+pub struct Event<'a> {
+    pub name: String,
+    pub execute: |data: &str|:'a
 }
 
-impl<'a> Socket<'a> {
+impl<'a> Event<'a> {
 
-	// Constructs a Socket object
-	pub fn new(id: &str, stream: TcpStream) -> Socket<'a> {
-		Socket {
-			id: String::from_str(id),
-			stream: stream
-		}
-	}
-
-	pub fn send() {
-
-	}	
+    // Constructs an Event object
+    pub fn new(event: &str, closure: |data: &str|:'a) -> Event<'a> {
+        Event {
+            name: String::from_str(event),
+            execute: closure
+        }
+    }
 }

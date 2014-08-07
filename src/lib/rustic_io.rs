@@ -26,26 +26,13 @@
 
 use std::str;
 
-
 mod server;
-
 
 /*
  * Returns a new Server to start WebSocket Protocol
  */
 pub fn listen(ip_addr: &str, port_num: u16) -> server::Server {
-    return server::Server::new(String::from_str(ip_addr), port_num, empty);
-}
-
-/*
- * Assigns the event loop to the passed server struct
- * Event loop does not fire, but keeps same lifetime as server
- */
-pub fn on_connection(server: server::Server, event_loop: fn() -> ()) {
-    // TODO - Implement a function in Server that accepts function pointer
-    // and assigns it to event_loop property
-    
-    // server.event_loop = event_loop;
+    server::Server::new(String::from_str(ip_addr), port_num)
 }
 
 /*
