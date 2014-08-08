@@ -42,5 +42,12 @@ impl<'a> Socket<'a> {
 
 	pub fn send() {
 
-	}	
+	}
+
+	pub fn clone(&self) -> Socket<'a> {
+		Socket {
+			id: self.id.clone(),
+			stream: self.stream.clone()
+		}
+	}
 }

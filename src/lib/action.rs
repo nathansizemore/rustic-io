@@ -21,43 +21,22 @@
 // SOFTWARE.
 
 
-#[path="lib/rustic_io.rs"]
-mod rustic_io;
+use std::str;
+use super::socket::Socket;
 
+#[path="./socket.rs"]
+mod socket;
 
-fn main() {
-
-    //Initialize
-    //rustic_io::init();
-
-    // Register events
-    rustic_io::on("connection", |data: &str| {
-        println!("Oh shit, it works!")
-    });
-
-    rustic_io::on("test", |data: &str| {
-        println!("test received!");
-    });
-
-    // Start server
-    rustic_io::start("127.0.0.1", 1338);
+pub struct Action<'a> {
+    pub event: String,
+    pub socket: Socket<'a>
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+impl<'a> Action<'a> {
+    pub fn new(event: &str, socket: Socket) -> Action<'a> {
+        Action {
+            event: String::from_str(event),
+            socket: socket
+        }
+    }
+}
