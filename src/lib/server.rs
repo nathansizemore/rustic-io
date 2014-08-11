@@ -21,32 +21,42 @@
 // SOFTWARE.
 
 
+use self::socket::Socket;
+use self::event::Event;
+
+#[path="./socket.rs"]
+mod socket;
+
+#[path="./event.rs"]
+mod event;
 
 
-use std::str;
-
-
-pub struct Event<'a> {
-    pub name: String,
-    pub execute: &'a fn(data: &str, server: super::Server)
+pub struct Server<'a> {
+    sockets: Vec<Socket<'a>>,
+    events: Vec<Event<'a>>
 }
 
-impl<'a> Event<'a> {
+impl<'a> Server<'a> {
+    pub fn new() -> Server<'a> {
+        Server {
+            sockets: Vec::new(),
+            events: Vec::new()    
+        }
+    }
 
-    // Constructs an Event object
-    pub fn new(event: &str, execute: &'a fn(data: &str, server: super::Server)) -> Event<'a> {
-        Event {
-            name: String::from_str(event),
-            execute: execute
+    pub fn on(&self, event_name: &str, execute: &fn(data: &str, server: Server)) {
+
+    }
+}
+
+impl<'a> Clone for Server<'a> {
+    fn clone(&self) -> Server<'a> {
+        Server {
+            sockets: self.sockets.clone(),
+            events: self.events.clone()
         }
     }
 }
 
-impl<'a> Clone for Event<'a> {
-    fn clone(&self) -> Event<'a> {
-        Event {
-            name: self.name.clone(),
-            execute: self.execute
-        }
-    }
-}
+
+
