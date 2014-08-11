@@ -37,23 +37,27 @@ use self::server::Server;
 pub mod server;
 
 
-
-pub fn new<'a>() -> Server<'a> {
-    Server::new()
-}
-
 pub fn start(server: Server, ip: &str, port: u16) {
 
-    // Start connection pool
-    //let (to_conn_pool, from_server): (Sender<Action>, Receiver<Action>) = channel();
+    /*
+     * Communication channels
+     *     - From HTTP Server to Connection Pool (Action Passed)
+     *     - From Connection Pool to Event Loop (Vec<Sockets> Passed)
+     */
+    let (to_conn_pool, from_server): (Sender<Action>, Receiver<Action>) = channel();
+    let (to_event_loop, from_conn_pool): (Sender<Vec<Socket>>, Receiver<Vec<Socket>>) = channel();
+
+    // Connection Pool Task
     spawn(proc() {
-        //connection_pool(from_server)
+        connection_pool(from_server, to_event_loop)
     });
 
-    // Start event loop
-    //let (to_event_loop, from_server): (Sender<Socket>, Receiver<Socket>) = channel();
+    // Event Loop Task
+    spawn(proc() {
+        event_loop(server.events.clone(), from_conn_pool)
+    });
 
-    // Start TCP Server
+    // TCP Server
     let listener = TcpListener::bind(ip, port);
     let mut acceptor = listener.listen();
 
@@ -61,12 +65,12 @@ pub fn start(server: Server, ip: &str, port: u16) {
         match stream {
             Err(e) => {
                 println!("Error: {}", e)
+
                 // TODO - Handle errors and shit
             }
             Ok(stream) => {
-                //let to_conn_pool_clone = to_conn_pool.clone();
                 spawn(proc() {                
-                    //process_new_connection(stream, to_conn_pool_clone)
+                    process_new_connection(stream, to_conn_pool.clone())
                 })
             }
         }
@@ -76,6 +80,28 @@ pub fn start(server: Server, ip: &str, port: u16) {
     drop(acceptor);
 }
 
+/*
+ * Connection Pool
+ *     - Maintains all connections
+ *     - On connect/disconnect - issues out new socket array to event loop
+ */
+fn connection_pool(from_server: Receiver<Action>, to_event_loop: Sender<Vec<Socket>>) {
+    let mut connection_list: Vec<Socket>> = Vec::new();
+    loop {
+        // Do all the things forever
+    }
+}
+
+
+
+/*
+ * Event Loop
+ *     - Listens for new socket array generated from Connection Pool
+ *     - Cycles through socket array's stream checking for data
+ */
+fn event_loop(server: Server, from_conn_pool: Receiver<Vec<Socket>>) {
+
+}
 
 
 

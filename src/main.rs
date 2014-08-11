@@ -29,7 +29,7 @@ mod rustic_io;
 fn main() {
 
     //Get yo'self a server
-    let mut server = rustic_io::new();
+    let mut server = Server::new();
 
     // Register events
     server.on("connection", &on_connection);
