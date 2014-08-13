@@ -36,7 +36,7 @@ impl<'a> Server<'a> {
         }
     }
 
-    pub fn on(&self, event_name: &str, execute: &fn(data: &str, server: Server)) {
+    pub fn on(&self, event_name: &str, execute: fn(data: &str, server: Server)) {
 
     }
 }

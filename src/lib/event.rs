@@ -18,13 +18,13 @@ use std::str;
 
 pub struct Event<'a> {
     pub name: String,
-    pub execute: &'a fn(data: &str, server: super::Server)
+    pub execute: fn(data: &str, server: super::Server)
 }
 
 impl<'a> Event<'a> {
 
     // Constructs an Event object
-    pub fn new(event: &str, execute: &'a fn(data: &str, server: super::Server)) -> Event<'a> {
+    pub fn new(event: &str, execute: fn(data: &str, server: super::Server)) -> Event<'a> {
         Event {
             name: String::from_str(event),
             execute: execute

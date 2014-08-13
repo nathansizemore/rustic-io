@@ -23,8 +23,8 @@ fn main() {
     let mut server = Server::new();
 
     // Register events
-    server.on("connection", &on_connection);
-    server.on("hello", &on_hello);
+    server.on("connection", on_connection);
+    server.on("hello", on_hello);
 
     // Start server
     rustic_io::start(server, "127.0.0.1", 1338);
