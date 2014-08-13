@@ -82,7 +82,11 @@ pub fn start(server: Server, ip: &str, port: u16) {
 fn connection_pool(from_server: Receiver<Action>, to_event_loop: Sender<Vec<Socket>>) {
     let mut connection_list: Vec<Socket> = Vec::new();
     loop {
-        // Do all the things forever
+        // from_server read (Blocking)
+        
+        // Match the result
+        // - new_connection -> add socket to connection_list
+        //      - send new list to event loop
     }
 }
 
@@ -92,7 +96,7 @@ fn connection_pool(from_server: Receiver<Action>, to_event_loop: Sender<Vec<Sock
  *     - Cycles through socket array's stream checking for data
  */
 fn event_loop(events: Vec<Event>, from_conn_pool: Receiver<Vec<Socket>>) {
-    // Wizard magic
+    
 }
 
 
