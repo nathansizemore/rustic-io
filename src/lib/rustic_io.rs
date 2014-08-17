@@ -27,6 +27,7 @@ use self::action::Action;
 use self::server::socket::Socket;
 use self::server::event::Event;
 use self::message::Message;
+use self::message::{Message, TextOp, Text, BinaryOp, Binary};
 
 
 mod action;
@@ -132,13 +133,13 @@ fn event_loop(events: Vec<Event>, from_conn_pool: Receiver<Vec<Socket>>) {
             let msg = Message::load(&mut stream).unwrap();
             let (payload, opcode) = match msg.payload {
                 Text(p) => {
+                    println!("Received: {}", (*p).as_slice());
                     (Text(box String::from_str("Received: ").append((*p).as_slice())), TextOp)
                 }
                 Binary(p) => {
                     (Binary(p), BinaryOp)
                 }
             };
-            println!("Received: {}");
         }
     }
 }

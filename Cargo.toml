@@ -6,4 +6,4 @@ authors = ["nathanrsizmore@gmail.com"]
 
 [dependencies.rust-crypto]
 
-git = "https://github.com/DaGenix/rust-crypto.git"
+git = "https://github.com/nathansizemore/rust-crypto.git"
