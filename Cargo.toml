@@ -1,9 +1,11 @@
 [package]
-
 name = "rustic-io"
 version = "0.0.0"
 authors = ["nathanrsizmore@gmail.com"]
 
-[dependencies.rust-crypto]
+[[lib]]
+name = "rustic-io"
+path = "src/rustic_io.rs"
 
+[dependencies.rust-crypto]
 git = "https://github.com/nathansizemore/rust-crypto.git"
