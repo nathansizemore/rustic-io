@@ -29,10 +29,6 @@ impl<'a> Socket<'a> {
 			stream: stream
 		}
 	}
-
-	pub fn send() {
-
-	}
 }
 
 impl<'a> Clone for Socket<'a> {

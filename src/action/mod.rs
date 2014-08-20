@@ -15,20 +15,28 @@
 
 use std::str;
 use super::server::socket::Socket;
-
-#[path="../socket/mod.rs"]
-mod socket;
+use super::message::Message;
+use super::message::{Message, TextOp, Text, BinaryOp, Binary};
 
 pub struct Action<'a> {
     pub event: String,
-    pub socket: Socket<'a>
+    pub socket: Socket<'a>,
+    pub message: Message
 }
 
 impl<'a> Action<'a> {
     pub fn new(event: &str, socket: Socket) -> Action<'a> {
+        // Build a default message
+        let (payload, opcode) = (Text(box String::from_str("blah, blah")), TextOp);
+        let msg = Message {
+            payload: payload,
+            opcode: opcode
+        };
+
         Action {
             event: String::from_str(event),
-            socket: socket
+            socket: socket,
+            message: msg.clone()
         }
     }
 }

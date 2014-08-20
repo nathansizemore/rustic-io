@@ -12,19 +12,21 @@
 
 // 0. You just DO WHAT THE FUCK YOU WANT TO.
 
+extern crate serialize;
 
 use std::str;
+use serialize::json;
 
 
 pub struct Event<'a> {
     pub name: String,
-    pub execute: fn(data: &str, server: super::Server)
+    pub execute: fn(data: json::Json, server: super::Server)
 }
 
 impl<'a> Event<'a> {
 
     // Constructs an Event object
-    pub fn new(event: &str, execute: fn(data: &str, server: super::Server)) -> Event<'a> {
+    pub fn new(event: &str, execute: fn(data: json::Json, server: super::Server)) -> Event<'a> {
         Event {
             name: String::from_str(event),
             execute: execute

@@ -28,10 +28,11 @@ use self::server::socket::Socket;
 use self::server::event::Event;
 use self::message::Message;
 use self::message::{Message, TextOp, Text, BinaryOp, Binary};
+use self::serialize::json;
 
 
 mod action;
-mod message;
+pub mod message;
 pub mod server;
 
 #[crate_id = "rustic-io"]
@@ -43,18 +44,19 @@ pub fn start(server: Server, ip: &str, port: u16) {
      *     - From HTTP Server to Connection Pool (Action Passed)
      *     - From Connection Pool to Event Loop (Vec<Sockets> Passed)
      */
-    let (to_conn_pool, from_server): (Sender<Action>, Receiver<Action>) = channel();
-    let (to_event_loop, from_conn_pool): (Sender<Socket>, Receiver<Socket>) = channel();
+    //let (to_conn_pool, from_server): (Sender<Action>, Receiver<Action>) = channel();
+    let (to_event_loop, from_conn_pool): (Sender<Action>, Receiver<Action>) = channel();
 
     // Connection Pool Task
-    spawn(proc() {
-        connection_pool(from_server, to_event_loop)
-    });
+    // spawn(proc() {
+    //     connection_pool(from_server, to_event_loop)
+    // });
 
     // Event Loop Task
-    let events_clone = server.events.clone();
+    let mut server_clone = server.clone();
+    let mut to_event_loop_clone = to_event_loop.clone();
     spawn(proc() {
-        event_loop(events_clone, from_conn_pool)
+        event_loop(server_clone, from_conn_pool, to_event_loop_clone)
     });
 
     // TCP Server
@@ -69,9 +71,9 @@ pub fn start(server: Server, ip: &str, port: u16) {
                 // TODO - Handle errors and shit
             }
             Ok(stream) => {
-                let to_conn_pool_clone = to_conn_pool.clone();
+                let event_loop_msgr = to_event_loop.clone();
                 spawn(proc() {                
-                    process_new_connection(stream, to_conn_pool_clone)
+                    process_new_connection(stream, event_loop_msgr)
                 })
             }
         }
@@ -182,79 +184,112 @@ fn sha1_hash(value: &str, out: &mut [u8]) {
 }
 
 /*
- * Connection Pool
- *     - Maintains all connections
- *     - On connect/disconnect - issues out new socket array to event loop
+ * Event Loop
+ *     - Listens for new socket array generated from Connection Pool
+ *     - Cycles through socket array's stream checking for data
  */
-fn connection_pool(from_server: Receiver<Action>, to_event_loop: Sender<Socket>) {
-    let mut connection_list: Vec<Socket> = Vec::new();
+fn event_loop(mut server: Server, from_conn_pool: Receiver<Action>, to_event_loop: Sender<Action>) {
+    let mut sockets: Vec<Socket> = Vec::new();
+    let mut socket_msgers: Vec<SocketMessenger> = Vec::new();
+    
     loop {
-        let new_connection = from_server.recv();
-        match new_connection.event.as_slice() {
-            "new_connection" => {
-                // Add socket to connection list
-                connection_list.push(new_connection.socket.clone());
+        match from_conn_pool.try_recv() {
+            Ok(action) => {
+                match action.event.as_slice() {
+                    "new_connection" => {
+                        let mut socket = action.socket.clone();
+                        let (to_socket, from_event_loop): (Sender<Message>, Receiver<Message>) = channel();
+                        let sock_msgr = SocketMessenger {
+                            id: socket.id.clone(),
+                            to_socket: to_socket.clone()   
+                        };
+                        socket_msgers.push(sock_msgr);
+                        let mut socket_server = server.clone();
+                        socket_server.sockets.push(socket.clone());
+                        socket_server.to_event_loop = to_event_loop.clone();
+                        spawn(proc() {
+                            start_new_socket(socket, from_event_loop, socket_server)
+                        });
+                    }
+                    "drop_connection" => {
 
-                // Send new list to event loop
-                to_event_loop.send(new_connection.socket.clone());
+                    }
+                    "broadcast" => {
+
+                    }
+                    "send" => {
+                        // Find the handler to this socket's out stream
+                        for item in socket_msgers.iter() {
+                            if item.id == action.socket.id {
+                                item.to_socket.send(action.message.clone())
+                            }
+                        }
+                    }
+                    _ => {
+
+                    }
+                }
             }
-            "drop_connection" => {
-                // TODO - Remove from connection_list
-                // TODO - Do some other shit?
-            }
-            "broadcast" => {
-                // TODO - Implement channel to event pool to hit
-                // all sockets with message
-            }
-            _ => {
-                // TODO - Default handler here probably isnt the best
-                println!("Uhm, so... I got some shit?")
+            Err(e) => {
+                // TODO - Maybe some stuff?
             }
         }
     }
 }
 
-/*
- * Event Loop
- *     - Listens for new socket array generated from Connection Pool
- *     - Cycles through socket array's stream checking for data
- */
-fn event_loop(events: Vec<Event>, from_conn_pool: Receiver<Socket>) {
-    let mut sockets: Vec<Socket> = Vec::new();
-    
+fn start_new_socket(socket: Socket, from_event_loop: Receiver<Message>, mut server: Server) {
+    // Start this socket's write stream in another process
+    let mut out_stream = socket.stream.clone();
+    spawn(proc() {
+        loop {
+            let msg = from_event_loop.recv();
+            msg.send(&mut out_stream).unwrap();
+        }
+    });
+
+    // Open up a read from this socket and wait till something is received
     loop {
-        match from_conn_pool.try_recv() {
-            Ok(socket) => {
-                let mut stream_out = socket.stream.clone();
-                let (to_socket, from_event_loop): (Sender<Message>, Receiver<Message>) = channel();
-                spawn(proc() {
-                    loop {
-                        // let mut stream_out = stream_out;
-                        // let msg = msg_receiver.recv();
-                        // msg.send(&mut stream_out).unwrap();
-                    }
-                });
+        let mut in_stream = socket.stream.clone();
+        let msg = Message::load(&mut in_stream).unwrap();
+        match msg.payload {
+            Text(ptr) => {
+                let json_slice = (*ptr).as_slice();
+                server.socket_id = socket.id.clone();
+                println!("Socket: {} recevied: {}", socket.id, json_slice);
+                determine_event(json_slice, server.clone());
             }
-            Err(e) => {
-                // Nothing received hits here
-                // Not sure if anything should happen, but it is required?
+            Binary(ptr) => {
+                // TODO - Do awesome binary shit
             }
         }
+    }    
+}
 
-        // for socket in sockets.iter() {
-        //     let mut stream = socket.stream.clone();
-        //     let msg = Message::load(&mut stream).unwrap();
-        //     let (payload, opcode) = match msg.payload {
-        //         Text(p) => {
-        //             println!("Received: {}", (*p).as_slice());
-        //             (Text(box String::from_str("Received: ").append((*p).as_slice())), TextOp)
-        //         }
-        //         Binary(p) => {
-        //             (Binary(p), BinaryOp)
-        //         }
-        //     };
-        // }
+fn determine_event(json_data: &str, server: Server) {
+    // Decode json
+    match json::from_str(json_data) {
+        Ok(result) => {
+            println!("JSON decoded as: {}", result)
+            let json_object = result.as_object().unwrap();
+            let req_event = json_object.find(&String::from_str("event")).unwrap().as_string().unwrap();
+            let passed_data = json_object.find(&String::from_str("data")).unwrap();
+
+            for event in server.events.iter() {
+                if req_event == event.name.as_slice() {
+                    let callback = event.execute;
+                    callback(passed_data.clone(), server.clone());
+                }
+            }
+        }
+        Err(e) => {
+            println!("Error deserializing json: {}", e)
+        }
     }
+}
+
+pub struct SocketMessenger {
+    id: String,
+    to_socket: Sender<Message>
 }
 
 
