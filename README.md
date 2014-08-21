@@ -8,7 +8,7 @@ rustic-io is a simple websocket server library written in Rust.  It's aim is to 
 Incomplete.
 
 #### Current State Abilities
-* Text only messages in a specific JSON format
+Text only messages in a specific JSON format
 
 #### Current State Process
 * Recevies an HTTP Websocket upgrade request, parse the header looking for Sec-Websocket-Key
