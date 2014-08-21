@@ -29,9 +29,10 @@ use self::server::event::Event;
 use self::message::Message;
 use self::message::{Message, TextOp, Text, BinaryOp, Binary};
 use self::serialize::json;
-
+use self::socketmessenger::SocketMessenger;
 
 mod action;
+mod socketmessenger;
 pub mod message;
 pub mod server;
 
@@ -40,29 +41,21 @@ pub mod server;
 pub fn start(server: Server, ip: &str, port: u16) {
 
     /*
-     * Communication channels
-     *     - From HTTP Server to Connection Pool (Action Passed)
-     *     - From Connection Pool to Event Loop (Vec<Sockets> Passed)
+     * Communication channel
+     *     - From HTTP Server to Event Loop (Action Passed)
      */
-    //let (to_conn_pool, from_server): (Sender<Action>, Receiver<Action>) = channel();
     let (to_event_loop, from_conn_pool): (Sender<Action>, Receiver<Action>) = channel();
 
-    // Connection Pool Task
-    // spawn(proc() {
-    //     connection_pool(from_server, to_event_loop)
-    // });
-
-    // Event Loop Task
+    // Start up event loop
     let mut server_clone = server.clone();
     let mut to_event_loop_clone = to_event_loop.clone();
     spawn(proc() {
         event_loop(server_clone, from_conn_pool, to_event_loop_clone)
     });
 
-    // TCP Server
+    // Start TCP server
     let listener = TcpListener::bind(ip, port);
     let mut acceptor = listener.listen();
-
     for stream in acceptor.incoming() {
         match stream {
             Err(e) => {
@@ -185,15 +178,15 @@ fn sha1_hash(value: &str, out: &mut [u8]) {
 
 /*
  * Event Loop
- *     - Listens for new socket array generated from Connection Pool
- *     - Cycles through socket array's stream checking for data
+ *     - Listens for new sockets from TCP server
+ *     - Listens for new events received from sockets
  */
-fn event_loop(mut server: Server, from_conn_pool: Receiver<Action>, to_event_loop: Sender<Action>) {
+fn event_loop(mut server: Server, from_server: Receiver<Action>, to_event_loop: Sender<Action>) {
     let mut sockets: Vec<Socket> = Vec::new();
     let mut socket_msgers: Vec<SocketMessenger> = Vec::new();
     
     loop {
-        match from_conn_pool.try_recv() {
+        match from_server.try_recv() {
             Ok(action) => {
                 match action.event.as_slice() {
                     "new_connection" => {
@@ -237,6 +230,9 @@ fn event_loop(mut server: Server, from_conn_pool: Receiver<Action>, to_event_loo
     }
 }
 
+/*
+ * Starts the I/O process for a new socket connection
+ */
 fn start_new_socket(socket: Socket, from_event_loop: Receiver<Message>, mut server: Server) {
     // Start this socket's write stream in another process
     let mut out_stream = socket.stream.clone();
@@ -265,8 +261,17 @@ fn start_new_socket(socket: Socket, from_event_loop: Receiver<Message>, mut serv
     }    
 }
 
+/*
+ * Decodes received JSON
+ * Expects the JSON to be in the following format:
+ *     {
+ *         "event": "EVENT_NAME",
+ *         "date": {
+ *             // Important data stuff
+ *         }
+ *     }
+ */
 fn determine_event(json_data: &str, server: Server) {
-    // Decode json
     match json::from_str(json_data) {
         Ok(result) => {
             println!("JSON decoded as: {}", result)
@@ -286,28 +291,3 @@ fn determine_event(json_data: &str, server: Server) {
         }
     }
 }
-
-pub struct SocketMessenger {
-    id: String,
-    to_socket: Sender<Message>
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

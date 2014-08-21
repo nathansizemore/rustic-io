@@ -27,10 +27,9 @@ pub mod socket;
 #[path="../event/mod.rs"]
 pub mod event;
 
-// #[path="../action/mod.rs"]
-// pub mod action;
-
-
+/*
+ * Struct representing a socket server
+ */
 pub struct Server<'a> {
     pub sockets: Vec<Socket<'a>>,
     pub events: Vec<Event<'a>>,
@@ -39,6 +38,7 @@ pub struct Server<'a> {
 }
 
 impl<'a> Server<'a> {
+    // Constructs a new Server
     pub fn new() -> Server<'a> {
         let (tx, rx): (Sender<Action>, Receiver<Action>) = channel();
         Server {
@@ -49,13 +49,18 @@ impl<'a> Server<'a> {
         }
     }
 
+    // Adds the passed function to the execute vector
     pub fn on(&mut self, event_name: &str, execute: fn(data: json::Json, server: Server)) {
         self.events.push(Event::new(event_name, execute));
     }
 
+    /*
+     * Sends the passed message to the current socket
+     * id held in self.socket_id
+     *
+     * Probably not the best way, but Im retarded and did it
+     */
     pub fn send(&self, msg: Message) {
-
-        // Find the socket, dunno why I made this so fucking dumb...
         let mut to_socket: Socket;
         println!("server.sockets.length: {}", self.sockets.len());
         for socket in self.sockets.iter() {
@@ -68,7 +73,6 @@ impl<'a> Server<'a> {
                 };
 
                 // Send it to the event_loop to write out
-                println!("Sending data to event loop");
                 self.to_event_loop.send(action);
             }
         }        

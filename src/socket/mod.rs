@@ -14,7 +14,11 @@
 
 
 use std::io::{TcpStream};
-	
+
+/*
+ * Struct representing a websocket
+ * id is the returned Sec-Socket-Key in return header
+ */
 pub struct Socket<'a> {
 	pub id: String,
 	pub stream: TcpStream

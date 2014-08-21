@@ -17,7 +17,10 @@ extern crate serialize;
 use std::str;
 use serialize::json;
 
-
+/*
+ * Struct representing an event, and a function to execute
+ * when that event is received from the client
+ */
 pub struct Event<'a> {
     pub name: String,
     pub execute: fn(data: json::Json, server: super::Server)

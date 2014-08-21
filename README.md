@@ -39,12 +39,21 @@ use rustic_io::server::Server;
 use rustic_io::message::Message;
 use rustic_io::message::{Message, TextOp, Text, BinaryOp, Binary};
 
+/*
+ * Some fancy thing that gets returned
+ */
+#[deriving(Decodable, Encodable)]
+pub struct Thing {
+    event: String,
+    data: String
+}
+
 fn main() {
 
     //Get yo'self a server
     let mut server = Server::new();
 
-    // Register events
+    // Register events you care about
     server.on("hello", on_hello);
 
     // Start server
@@ -52,32 +61,24 @@ fn main() {
 }
 
 fn on_hello(data: json::Json, server: Server) {
-    println!("on_hello called");
     
-    // Do some fancy shit with data
+    // Do some important shit with data
     
-    // Create a return object
+    // Create the fancy return thing
     let thing = Thing {
         event: String::from_str("echo"),
         data: String::from_str("asdf")
     };
     
-    // Create the return message
-    let (payload, opcode) = (Text(box String::from_str(json::encode(&thing).as_slice())), TextOp);
+    // Put that fancy thing into a websocket message
+    let (payload, mask) = (Text(box String::from_str(json::encode(&thing).as_slice())), TextOp);
     let msg = Message {
         payload: payload,
-        opcode: opcode
+        mask: mask
     };
 
+    // Tell the server to send that fancy shit
     server.send(msg);
-
-
-}
-
-#[deriving(Decodable, Encodable)]
-pub struct Thing {
-    event: String,
-    data: String
 }
 ```
   
