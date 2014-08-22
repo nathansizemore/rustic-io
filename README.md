@@ -4,6 +4,7 @@ rustic-io
 rustic-io is a simple websocket server library written in Rust.  It aims to be a fast, scalable websocket server for text and binary messages.
 
 **How it Works**
+
 Upon connection, Sockets are grouped together in an event loop which allows broadcasting to all, and each socket is contained in a separate Rust task, with it's write stream also a separate task.  This allows really fast I/O even under high concurrent loads.
 You pass rustic-io the event name you are listening for, and the function you want to execute when that event is received, and it takes care of the rest.
 
