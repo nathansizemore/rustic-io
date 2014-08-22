@@ -5,23 +5,14 @@ rustic-io is a simple websocket server library written in Rust.  It aims to be a
 
 **How it Works**
 
-Upon connection, Sockets are grouped together in an event loop which allows broadcasting to all, and each socket is contained in a separate Rust task, with it's write stream also a separate task.  This allows really fast I/O even under high concurrent loads.
+Sockets are grouped together in an event loop which allows broadcasting to all, and each socket is contained in a separate Rust task, with it's write stream also a separate task.  This allows really fast I/O even under high concurrent loads.
 You pass rustic-io the event name you are listening for, and the function you want to execute when that event is received, and it takes care of the rest.
 
 Pull requests are welcomed, and encouraged; because I have no idea what I am doing.  I just started banging on the keyboard and this is what I ended up with.
 
 
 #### Current State
-Incomplete.
-
-#### Current State Abilities
-Text only messages in a specific JSON format
-
-#### Current State Process
-* Recevies an HTTP Websocket upgrade request, parse the header looking for Sec-Websocket-Key
-* If found, returns HTTP Accept header, if not found, does nothing
-* Creates new tasks for that socket's I/O
-* Upon receiving JSON, looks for the "event" key, grabs it's value and executes the function associated with that event name
+Incomplete. Only text messages in specific JSON format are supported.
 
 #### TODOs
 * **Crate It Up Correctly?
