@@ -13,15 +13,11 @@
 // 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 
-extern crate rust_crypto = "rust-crypto";
 extern crate serialize;
 
 use std::str;
 use std::io::{TcpListener, TcpStream};
 use std::io::{Listener, Acceptor};
-use self::rust_crypto::digest::Digest;
-use self::rust_crypto::sha1::Sha1;
-use self::serialize::base64::{ToBase64, STANDARD};
 use self::server::Server;
 use self::action::Action;
 use self::server::socket::Socket;
@@ -30,7 +26,9 @@ use self::message::Message;
 use self::message::{Message, TextOp, Text, BinaryOp, Binary};
 use self::serialize::json;
 use self::socketmessenger::SocketMessenger;
+use self::httpheader::{RequestHeader, ReturnHeader};
 
+mod httpheader;
 mod action;
 mod socketmessenger;
 pub mod message;
@@ -90,7 +88,6 @@ fn process_new_connection(mut stream: TcpStream, to_conn_pool: Sender<Action>) {
         }
         Err(e) => {
             println!("Error: {}", e)
-
             // TODO - Handle errors and shit
         }
     }
@@ -99,81 +96,29 @@ fn process_new_connection(mut stream: TcpStream, to_conn_pool: Sender<Action>) {
     match str::from_utf8(buffer) {
         Some(header) => {
             println!("{}", header);
-            for line in header.split_str("\r\n") {
-                let key_value: Vec<&str> = line.split(' ').collect();
-                if key_value[0] == "Sec-WebSocket-Key:" {
-                    return_accept_header(stream.clone(), key_value[1], to_conn_pool.clone())
+            let request_header = RequestHeader::new(header);
+            if request_header.is_valid() {
+                let return_header = ReturnHeader::new_accept(request_header.sec_websocket_key.as_slice());
+                match stream.write(return_header.to_string().as_bytes()) {
+                    Ok(result) => {
+                        println!("Adding new connection to pool...")
+                        let socket = Socket::new(return_header.sec_websocket_accept.as_slice(), stream);
+                        let action = Action::new("new_connection", socket);
+                        to_conn_pool.send(action);
+                    }
+                    Err(e) => {
+                        println!("Error writing to stream: {}", e)
+                    }
                 }
+            } else {
+                println!("Request header not valid");
+                // TODO - return a rejected header
             }
         }
         None => {
             println!("Buffer not valid UTF-8")
         }
     }
-}
-
-/*
- * Returns the WebSocket Protocol Accept Header to the requesting client
- *
- * Accept Header:
- * HTTP/.1 101 Switching Protocols
- * Upgrade: websocket
- * Connection: Upgrade
- * Sec-WebSocket-Accept: COMPUTED_VALUE
- *
- * Steps to create the Sec-WebSocket-Accept Key:
- * 1.) Append "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" to passed key
- * 2.) SHA-1 Hash that value
- * 3.) Base64 encode the hashed bytes, not string
- * 4.) Return Base64 encoded bytes, not string
- */ 
-fn return_accept_header(mut stream: TcpStream, key: &str, to_conn_pool: Sender<Action>) {
-    // Combine key and WebSocket Key API thing        
-    let mut pre_hash = String::from_str(key);
-    pre_hash.push_str("258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
-
-    //Get the SHA-1 Hash as bytes
-    let mut out = [0u8, ..20];
-    sha1_hash(pre_hash.as_slice(), out);
-
-    //Base64 encode the buffer
-    let mut config = STANDARD;
-    let mut encoded = out.to_base64(config);
-
-    //Build the accept header
-    let mut accept_header = String::from_str("HTTP/1.1 101 Switching Protocols\r\n");
-    accept_header.push_str("Upgrade: websocket\r\n");
-    accept_header.push_str("Connection: Upgrade\r\n");
-    accept_header.push_str("Sec-WebSocket-Accept: ");
-    let mut based_bytes;
-    unsafe {
-        based_bytes = encoded.as_bytes();
-        accept_header.push_bytes(based_bytes);
-    }
-    accept_header.push_str("\r\n\r\n");
-
-    //Return header to asking client
-    match stream.write(accept_header.as_bytes()) {
-        Ok(result) => {
-            println!("Adding new connection to pool...")
-            let socket = Socket::new(encoded.as_slice(), stream);
-            let action = Action::new("new_connection", socket);
-            to_conn_pool.send(action);
-        }
-        Err(e) => {
-            println!("Error writing to stream: {}", e)
-        }
-    }
-}
-
-/*
- * SHA-1 Hash performed on passed value
- * Bytes placed in passed out buffer
- */
-fn sha1_hash(value: &str, out: &mut [u8]) {
-    let mut sha = box Sha1::new();
-    (*sha).input_str(value);
-    sha.result(out);
 }
 
 /*
@@ -291,3 +236,4 @@ fn determine_event(json_data: &str, server: Server) {
         }
     }
 }
+
