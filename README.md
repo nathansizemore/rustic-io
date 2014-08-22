@@ -15,7 +15,7 @@ Pull requests are welcomed, and encouraged; because I have no idea what I am doi
 Incomplete. Only text messages in specific JSON format are supported.
 
 #### TODOs
-* **Crate It Up Correctly?
+* **Crate It Up Correctly?**
   * Work on the Cargo files, naming, organization to make this a more Rust-styled crate
     * It works now, because I just randonly move shit until it compiles :)  But would like to get a better handle on the cargo files and versioning and stuffs
 * **HTTP Header Response**
