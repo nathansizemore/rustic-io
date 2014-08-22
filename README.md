@@ -23,12 +23,12 @@ Incomplete. Only text messages in specific JSON format are supported.
   * Implement better parsing for incoming HTTP header
     * Right now, all it cares about is the Sec-WebSocket-Key field
 * **JSON Messages**
-  * Figure out better way to prase and handle errors in JSON
+  * Figure out better way to prase and handle errors with JSON
   * Create default module for rustic-io event JSONs
 * **Binary Messages**
   * Implement the shit
 * **JavaScript Library**
-  * Create a Client side JavaScript library for abstracting rustic-io communication
+  * Create a client side JavaScript library for abstracting rustic-io communication
 
 #### Example Usage
 ```
