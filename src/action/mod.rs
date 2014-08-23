@@ -15,7 +15,6 @@
 
 use std::str;
 use super::server::socket::Socket;
-use super::message::Message;
 use super::message::{Message, TextOp, Text, BinaryOp, Binary};
 
 /*

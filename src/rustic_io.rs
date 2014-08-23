@@ -22,7 +22,6 @@ use self::server::Server;
 use self::action::Action;
 use self::server::socket::Socket;
 use self::server::event::Event;
-use self::message::Message;
 use self::message::{Message, TextOp, Text, BinaryOp, Binary};
 use self::serialize::json;
 use self::socketmessenger::SocketMessenger;

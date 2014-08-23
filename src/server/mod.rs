@@ -18,7 +18,6 @@ use serialize::json;
 use self::socket::Socket;
 use self::event::Event;
 use super::action::Action;
-use super::message::Message;
 use super::message::{Message, TextOp, Text, BinaryOp, Binary};
 
 #[path="../socket/mod.rs"]

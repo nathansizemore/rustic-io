@@ -1,0 +1,2 @@
+/home/nathan/Development/projects/rustic-io/target/librustic-io-0c25204332e1da52.rlib: src/rustic_io.rs src/httpheader/mod.rs src/action/mod.rs src/socketmessenger/mod.rs src/message/mod.rs src/server/mod.rs src/socket/mod.rs src/event/mod.rs
+
