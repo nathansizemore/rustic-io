@@ -1,7 +1,9 @@
 rustic-io
 =========
 
-rustic-io is a simple websocket server library written in Rust.  It aims to be a fast, scalable websocket server for text and binary messages.
+rustic-io is a simple websocket server library written in Rust.  It aims to be a fast, scalable websocket server library for text and binary messages.
+
+Borrows messaging implementation from [rust-ws](https://github.com/ehsanul/rust-ws)
 
 **How it Works**
 
@@ -31,7 +33,7 @@ Incomplete. Only text messages in specific JSON format are supported.
   * Create a client side JavaScript library for abstracting rustic-io communication
 
 #### Example Usage
-```
+```rust
 extern crate rustic_io = "rustic-io";
 extern crate serialize;
 
