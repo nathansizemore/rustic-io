@@ -1,6 +1,6 @@
 [package]
 name = "rustic-io"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["nathanrsizmore@gmail.com"]
 
 [lib]
