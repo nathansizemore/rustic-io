@@ -1,4 +1,4 @@
 install:
-  - curl http://www.rust-lang.org/rustup.sh | sudo sh -
+  - curl https://www.rust-lang.org/rustup.sh | sudo sh -
 script:
   - cargo build --verbose
