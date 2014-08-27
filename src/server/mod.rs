@@ -12,9 +12,9 @@
 
 // 0. You just DO WHAT THE FUCK YOU WANT TO.
 
-extern crate serialize;
 
-use serialize::json;
+use super::serialize::json;
+use super::serialize::json::Json;
 use self::socket::Socket;
 use self::event::Event;
 use super::action::Action;
@@ -36,6 +36,15 @@ pub struct Server<'a> {
     pub socket_id: String
 }
 
+/*
+ * Struct representing rustic-io's JSON message passing
+ */
+#[deriving(Decodable, Encodable)]
+struct JsonMessage {
+    event: String,
+    data: String // json::encode() value expected
+}
+
 impl<'a> Server<'a> {
     // Constructs a new Server
     pub fn new() -> Server<'a> {
@@ -49,7 +58,7 @@ impl<'a> Server<'a> {
     }
 
     // Adds the passed function to the execute vector
-    pub fn on(&mut self, event_name: &str, execute: fn(data: json::Json, server: Server)) {
+    pub fn on(&mut self, event_name: &str, execute: fn(data: Json, server: Server)) {
         self.events.push(Event::new(event_name, execute));
     }
 
@@ -59,9 +68,19 @@ impl<'a> Server<'a> {
      *
      * Probably not the best way, but Im retarded and did it
      */
-    pub fn send(&self, msg: Message) {
+    pub fn send(&self, event: &str, data: String) {
+        
+        let json_msg = JsonMessage {
+            event: String::from_str(event),
+            data: data
+        };
+
+        let msg = Message {
+            payload: Text(box String::from_str(json::encode(&json_msg).as_slice())),
+            mask: TextOp
+        };
+
         let mut to_socket: Socket;
-        println!("server.sockets.length: {}", self.sockets.len());
         for socket in self.sockets.iter() {
             if socket.id == self.socket_id {
                 to_socket = socket.clone();

@@ -3,7 +3,7 @@ name = "rustic-io"
 version = "0.0.0"
 authors = ["nathanrsizmore@gmail.com"]
 
-[[lib]]
+[lib]
 name = "rustic-io"
 path = "src/rustic_io.rs"
 
