@@ -69,17 +69,19 @@ impl<'a> Server<'a> {
      * Probably not the best way, but Im retarded and did it
      */
     pub fn send(&self, event: &str, data: String) {
-        
+        // Build a JsonMessage
         let json_msg = JsonMessage {
             event: String::from_str(event),
             data: data
         };
 
+        // Wrap it in the WebSocket bitmask
         let msg = Message {
             payload: Text(box String::from_str(json::encode(&json_msg).as_slice())),
             mask: TextOp
         };
 
+        // Send the message
         let mut to_socket: Socket;
         for socket in self.sockets.iter() {
             if socket.id == self.socket_id {
@@ -89,9 +91,8 @@ impl<'a> Server<'a> {
                     socket: to_socket,
                     message: msg.clone()
                 };
-
-                // Send it to the event_loop to write out
                 self.to_event_loop.send(action);
+                break; // Leave loop when socket is found
             }
         }        
     }
