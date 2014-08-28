@@ -51,5 +51,3 @@ rustic_io.prototype.send = function(event, data) {
     };
     this.socket.send(JSON.stringify(jsonMessage));
 };
-
-

@@ -14,16 +14,19 @@
 
 
 extern crate serialize;
+extern crate collections;
 
 use std::str;
 use std::io::{TcpListener, TcpStream};
 use std::io::{Listener, Acceptor};
+use self::collections::treemap::TreeMap;
 use self::server::Server;
 use self::action::Action;
 use self::server::socket::Socket;
 use self::server::event::Event;
 use self::message::{Message, TextOp, Text, BinaryOp, Binary};
 use self::serialize::json;
+use self::serialize::json::Json;
 use self::socketmessenger::SocketMessenger;
 use self::httpheader::{RequestHeader, ReturnHeader};
 
@@ -56,9 +59,7 @@ pub fn start(server: Server, ip: &str, port: u16) {
     for stream in acceptor.incoming() {
         match stream {
             Err(e) => {
-                println!("Error: {}", e)
-
-                // TODO - Handle errors and shit
+                println!("Error accepting connection: {}", e)
             }
             Ok(stream) => {
                 let event_loop_msgr = to_event_loop.clone();
@@ -68,8 +69,6 @@ pub fn start(server: Server, ip: &str, port: u16) {
             }
         }
     }
-
-    // Close resources when loop stops/fails or some shit I need to figure out
     drop(acceptor);
 }
 
@@ -80,18 +79,18 @@ pub fn start(server: Server, ip: &str, port: u16) {
  * Executed on separate thread.  Exits if the header is not found
  */
 fn process_new_connection(mut stream: TcpStream, to_conn_pool: Sender<Action>) {
-    let mut buffer = [0, ..1024]; // 512 may be fine here?
+    let mut buffer = [0, ..1024]; // TODO - Determine a size based on modern borwsers
     match stream.read(buffer) {
         Ok(result) => {
             println!("Ok: {}", result)
         }
         Err(e) => {
-            println!("Error: {}", e)
-            // TODO - Handle errors and shit
+            println!("Error reading incoming connection buffer: {}", e)
+            return;
         }
     }
     
-    //Parse request for Sec-WebSocket-Key
+    // Parse request for Sec-WebSocket-Key
     match str::from_utf8(buffer) {
         Some(header) => {
             println!("{}", header);
@@ -110,8 +109,7 @@ fn process_new_connection(mut stream: TcpStream, to_conn_pool: Sender<Action>) {
                     }
                 }
             } else {
-                println!("Request header not valid");
-                // TODO - return a rejected header
+                println!("Request header invalid");
             }
         }
         None => {
@@ -163,12 +161,13 @@ fn event_loop(mut server: Server, from_server: Receiver<Action>, to_event_loop: 
                         }
                     }
                     _ => {
-
+                        println!("Event loop received unknown action: {}", action.event);
                     }
                 }
             }
             Err(e) => {
-                // TODO - Maybe some stuff?
+                // Do nothing.
+                // try_recv() returns Err when no message is available
             }
         }
     }
@@ -187,7 +186,7 @@ fn start_new_socket(socket: Socket, from_event_loop: Receiver<Message>, mut serv
         }
     });
 
-    // Open up a read from this socket and wait till something is received
+    // Open up a blocking read on this socket
     loop {
         let mut in_stream = socket.stream.clone();
         let msg = Message::load(&mut in_stream).unwrap();
@@ -196,7 +195,7 @@ fn start_new_socket(socket: Socket, from_event_loop: Receiver<Message>, mut serv
                 let json_slice = (*ptr).as_slice();
                 server.socket_id = socket.id.clone();
                 println!("Socket: {} recevied: {}", socket.id, json_slice);
-                determine_event(json_slice, server.clone());
+                parse_json(json_slice, server.clone());
             }
             Binary(ptr) => {
                 // TODO - Do awesome binary shit
@@ -209,24 +208,39 @@ fn start_new_socket(socket: Socket, from_event_loop: Receiver<Message>, mut serv
  * Decodes received JSON
  * Expects the JSON to be in the following format:
  *     {
- *         "event": "EVENT_NAME",
- *         "date": {
+ *         "event": "SOME_STRING",
+ *         "data": {
  *             // Important data stuff
  *         }
  *     }
  */
-fn determine_event(json_data: &str, server: Server) {
+fn parse_json(json_data: &str, server: Server) {
     match json::from_str(json_data) {
         Ok(result) => {
             println!("JSON decoded as: {}", result)
-            let json_object = result.as_object().unwrap();
-            let req_event = json_object.find(&String::from_str("event")).unwrap().as_string().unwrap();
-            let passed_data = json_object.find(&String::from_str("data")).unwrap();
 
-            for event in server.events.iter() {
-                if req_event == event.name.as_slice() {
-                    let callback = event.execute;
-                    callback(passed_data.clone(), server.clone());
+            // Try and parse Json as object
+            match result.as_object() {
+                Some(object) => {
+                    // Get passed event
+                    match try_find_event(object) {
+                        Some(event) => {
+                            let data = get_json_data(object);
+                            for listening_for in server.events.iter() {
+                                if event == listening_for.name {
+                                    (listening_for.execute)(data, server.clone());
+                                    break;
+                                }
+                            }
+                        }
+                        None => {
+                            println!("Error finding event key")
+                            return;
+                        }
+                    }
+                }
+                None => {
+                    println!("Error decoding Json as object")
                 }
             }
         }
@@ -235,4 +249,79 @@ fn determine_event(json_data: &str, server: Server) {
         }
     }
 }
+
+/*
+ * Attempts to find the value for the "event" key
+ * in the passed Json.
+ * If not present, or cannot be parsed as a string,
+ * returns None
+ */
+fn try_find_event(treemap: &TreeMap<String, Json>) -> Option<String> {
+    match treemap.find(&String::from_str("event")) {
+        Some(value) => {
+            if value.is_string() {
+                return Some(String::from_str(value.as_string().unwrap()));
+            }
+            None // Value was not a string
+        }
+        None => {
+            None // Event key not found in Json
+        }
+    }
+}
+
+/*
+ * Attempts to find and return the value for the "data" key in 
+ * the passed Json
+ * If not found, or not able to parse into object, returns 
+ * an empty Json object (e.g. "{}")
+ */
+fn get_json_data(treemap: &TreeMap<String, Json>) -> Json {
+    match treemap.find(&String::from_str("data")) {
+        Some(value) => {
+            if value.is_object() {
+                return value.clone();
+            } else {
+                // Send back empty Json
+                let no_data = json::from_str("{}").unwrap();
+                return no_data;
+            }
+        }
+        None => {
+            // Send back empty Json
+            let no_data = json::from_str("{}").unwrap();
+            return no_data;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
