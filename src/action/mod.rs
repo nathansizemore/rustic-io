@@ -13,7 +13,6 @@
 // 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 
-use std::str;
 use super::server::socket::Socket;
 use super::message::{Message, TextOp, Text, BinaryOp, Binary};
 

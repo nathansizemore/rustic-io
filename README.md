@@ -8,7 +8,10 @@ Borrows messaging implementation from [rust-ws](https://github.com/ehsanul/rust-
 Pull requests are welcomed, and encouraged; because I have no idea what I am doing.  I just started banging on the keyboard and this is what I ended up with.
 
 #### Current State
-Incomplete. JavaScript library that abstracts websockets is now available.
+Incomplete. JavaScript library is now available.
+* **What you can currently do**
+  * JSON messaging between sockets
+  * JSON broadcasting to all sockets
 
 #### TODOs
 * **Crate It Up Correctly?**
@@ -17,9 +20,6 @@ Incomplete. JavaScript library that abstracts websockets is now available.
 * **HTTP Header**
   * Implement better parsing for incoming HTTP header
     * Right now, all it cares about is the Sec-WebSocket-Key field
-* **JSON Messages**
-  * Figure out better way to parse and handle errors with JSON
-  * Create default module for rustic-io event JSONs
 * **Binary Messages**
   * Implement the shit
 * **Disconnects/Closing Connections**
@@ -36,14 +36,23 @@ pub struct Foo {
 
 fn main() {
     let mut server = Server::new();
-    server.on("hello", echo_back);
+    server.on("tell_just_me", tell_just_me);
+    server.on("tell_erry_body", tell_erry_body);
     rustic_io::start(server, "127.0.0.1", 1338);
 }
 
-fn echo_back(data: json::Json, server: Server) {
+fn tell_just_me(data: json::Json, server: Server) {
     let json_object = data.as_object().unwrap();
     let msg = json_object.find(&String::from_str("msg")).unwrap().as_string().unwrap();
     server.send("echo", json::encode(&Foo {
+        msg: String::from_str(msg)
+    }));
+}
+
+fn tell_erry_body(data: json::Json, server: Server) {
+    let json_object = data.as_object().unwrap();
+    let msg = json_object.find(&String::from_str("msg")).unwrap().as_string().unwrap();
+    server.broadcast("echo", json::encode(&Foo {
         msg: String::from_str(msg)
     }));
 }

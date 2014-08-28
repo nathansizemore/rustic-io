@@ -23,8 +23,7 @@ use self::collections::treemap::TreeMap;
 use self::server::Server;
 use self::action::Action;
 use self::server::socket::Socket;
-use self::server::event::Event;
-use self::message::{Message, TextOp, Text, BinaryOp, Binary};
+use self::message::{Message, Text, Binary};
 use self::serialize::json;
 use self::serialize::json::Json;
 use self::socketmessenger::SocketMessenger;
@@ -36,8 +35,6 @@ mod socketmessenger;
 pub mod message;
 pub mod server;
 
-#[crate_id = "rustic-io"]
-
 pub fn start(server: Server, ip: &str, port: u16) {
 
     /*
@@ -47,8 +44,8 @@ pub fn start(server: Server, ip: &str, port: u16) {
     let (to_event_loop, from_conn_pool): (Sender<Action>, Receiver<Action>) = channel();
 
     // Start up event loop
-    let mut server_clone = server.clone();
-    let mut to_event_loop_clone = to_event_loop.clone();
+    let server_clone = server.clone();
+    let to_event_loop_clone = to_event_loop.clone();
     spawn(proc() {
         event_loop(server_clone, from_conn_pool, to_event_loop_clone)
     });
@@ -58,15 +55,15 @@ pub fn start(server: Server, ip: &str, port: u16) {
     let mut acceptor = listener.listen();
     for stream in acceptor.incoming() {
         match stream {
-            Err(e) => {
-                println!("Error accepting connection: {}", e)
-            }
             Ok(stream) => {
                 let event_loop_msgr = to_event_loop.clone();
                 spawn(proc() {                
                     process_new_connection(stream, event_loop_msgr)
                 })
             }
+            Err(e) => {
+                println!("Error accepting connection: {}", e)
+            }            
         }
     }
     drop(acceptor);
@@ -93,13 +90,13 @@ fn process_new_connection(mut stream: TcpStream, to_conn_pool: Sender<Action>) {
     // Parse request for Sec-WebSocket-Key
     match str::from_utf8(buffer) {
         Some(header) => {
-            println!("{}", header);
+            // println!("{}", header);
             let request_header = RequestHeader::new(header);
             if request_header.is_valid() {
                 let return_header = ReturnHeader::new_accept(request_header.sec_websocket_key.as_slice());
                 match stream.write(return_header.to_string().as_bytes()) {
                     Ok(result) => {
-                        println!("Adding new connection to pool...")
+                        println!("New connection");
                         let socket = Socket::new(return_header.sec_websocket_accept.as_slice(), stream);
                         let action = Action::new("new_connection", socket);
                         to_conn_pool.send(action);
@@ -123,8 +120,7 @@ fn process_new_connection(mut stream: TcpStream, to_conn_pool: Sender<Action>) {
  *     - Listens for new sockets from TCP server
  *     - Listens for new events received from sockets
  */
-fn event_loop(mut server: Server, from_server: Receiver<Action>, to_event_loop: Sender<Action>) {
-    let mut sockets: Vec<Socket> = Vec::new();
+fn event_loop(server: Server, from_server: Receiver<Action>, to_event_loop: Sender<Action>) {
     let mut socket_msgers: Vec<SocketMessenger> = Vec::new();
     
     loop {
@@ -132,7 +128,7 @@ fn event_loop(mut server: Server, from_server: Receiver<Action>, to_event_loop: 
             Ok(action) => {
                 match action.event.as_slice() {
                     "new_connection" => {
-                        let mut socket = action.socket.clone();
+                        let socket = action.socket.clone();
                         let (to_socket, from_event_loop): (Sender<Message>, Receiver<Message>) = channel();
                         let sock_msgr = SocketMessenger {
                             id: socket.id.clone(),
@@ -150,13 +146,16 @@ fn event_loop(mut server: Server, from_server: Receiver<Action>, to_event_loop: 
 
                     }
                     "broadcast" => {
-
+                        // Send the message to everyone
+                        for msger in socket_msgers.iter() {
+                            msger.to_socket.send(action.message.clone())
+                        }
                     }
                     "send" => {
                         // Find the handler to this socket's out stream
-                        for item in socket_msgers.iter() {
-                            if item.id == action.socket.id {
-                                item.to_socket.send(action.message.clone())
+                        for msger in socket_msgers.iter() {
+                            if msger.id == action.socket.id {
+                                msger.to_socket.send(action.message.clone())
                             }
                         }
                     }

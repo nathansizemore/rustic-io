@@ -14,7 +14,6 @@
 
 extern crate serialize;
 
-use std::str;
 use serialize::json;
 
 /*

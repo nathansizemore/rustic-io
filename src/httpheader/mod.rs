@@ -20,12 +20,9 @@
  * 
  * http://tools.ietf.org/html/rfc6455 - For reference
  */
-
-
 extern crate serialize;
 extern crate rust_crypto = "rust-crypto";
 
-use std::str;
 use self::rust_crypto::digest::Digest;
 use self::rust_crypto::sha1::Sha1;
 use self::serialize::base64::{ToBase64, STANDARD};
@@ -135,25 +132,14 @@ impl ReturnHeader {
         ReturnHeader::sha1_hash(pre_hash.as_slice(), out);
 
         //Base64 encode the buffer
-        let mut config = STANDARD;
-        let mut encoded = out.to_base64(config);
+        let config = STANDARD;
+        let encoded = out.to_base64(config);
 
         ReturnHeader {
             heading: String::from_str("HTTP/1.1 101 Switching Protocols\r\n"),
             upgrade: String::from_str("Upgrade: websocket\r\n"),
             connection: String::from_str("Connection: Upgrade\r\n"),
             sec_websocket_accept: encoded
-        }
-    }
-
-    // Constructs a new ReturnHeader that rejects the connection
-    // TODO - Make this real
-    pub fn new_reject() -> ReturnHeader {
-        ReturnHeader {
-            heading: String::from_str(""),
-            upgrade: String::from_str(""),
-            connection: String::from_str(""),
-            sec_websocket_accept: String::from_str("")
         }
     }
 
@@ -165,7 +151,7 @@ impl ReturnHeader {
         stringified.push_str(self.connection.as_slice());
         stringified.push_str("Sec-Websocket-Accept: ");
         unsafe {
-            let mut bytes = self.sec_websocket_accept.as_bytes();
+            let bytes = self.sec_websocket_accept.as_bytes();
             stringified.push_bytes(bytes);
         }
         stringified.push_str("\r\n\r\n");
@@ -180,16 +166,6 @@ impl ReturnHeader {
         let mut sha = box Sha1::new();
         (*sha).input_str(value);
         sha.result(out);
-    }
-
-    // Constructs a blank return header for use with other new functions
-    fn new() -> ReturnHeader {
-        ReturnHeader {
-            heading: String::from_str(""),
-            upgrade: String::from_str(""),
-            connection: String::from_str(""),
-            sec_websocket_accept: String::from_str("")
-        }
     }
 }
 

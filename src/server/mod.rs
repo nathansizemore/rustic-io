@@ -94,7 +94,33 @@ impl<'a> Server<'a> {
                 self.to_event_loop.send(action);
                 break; // Leave loop when socket is found
             }
-        }        
+        }
+    }
+
+    pub fn broadcast(&self, event: &str, data: String) {
+        // Build a JsonMessage
+        let json_msg = JsonMessage {
+            event: String::from_str(event),
+            data: data
+        };
+
+        // Wrap it in the WebSocket bitmask
+        let msg = Message {
+            payload: Text(box String::from_str(json::encode(&json_msg).as_slice())),
+            mask: TextOp
+        };
+
+        // Ensure we actually have at least one person to send this to
+        if self.sockets.len() > 0 {
+            let action = Action {
+                event: String::from_str("broadcast"),
+                socket: self.sockets[0].clone(),
+                message: msg.clone()
+            };
+            self.to_event_loop.send(action);
+        } else {
+            println!("There is no one connected right now...")
+        }
     }
 }
 
