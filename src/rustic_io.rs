@@ -187,8 +187,8 @@ fn start_new_socket(socket: Socket, from_event_loop: Receiver<Message>, mut serv
     });
 
     // Open up a blocking read on this socket
-    loop {
-        let mut in_stream = socket.stream.clone();
+    let mut in_stream = socket.stream.clone();
+    loop {        
         let msg = Message::load(&mut in_stream).unwrap();
         match msg.payload {
             Text(ptr) => {
