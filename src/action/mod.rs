@@ -25,16 +25,16 @@ use super::message::{Message, TextOp, Text, BinaryOp, Binary};
  *  - "broadcast"
  *  - "send"
  */
-pub struct Action<'a> {
+pub struct Action {
     pub event: String,
-    pub socket: Socket<'a>,
+    pub socket: Socket,
     pub message: Message
 }
 
-impl<'a> Action<'a> {
+impl Action {
 
     // Constructs a new action
-    pub fn new(event: &str, socket: Socket) -> Action<'a> {
+    pub fn new(event: &str, socket: Socket) -> Action {
         // Build a default message for when action does not need a message
         let (payload, mask) = (Text(box String::from_str("blah, blah")), TextOp);
         let msg = Message {

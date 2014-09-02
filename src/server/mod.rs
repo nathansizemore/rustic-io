@@ -13,12 +13,13 @@
 // 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 
+use self::event::Event;
+use self::socket::Socket;
+use super::action::Action;
 use super::serialize::json;
 use super::serialize::json::Json;
-use self::socket::Socket;
-use self::event::Event;
-use super::action::Action;
 use super::message::{Message, TextOp, Text, BinaryOp, Binary};
+
 
 #[path="../socket/mod.rs"]
 pub mod socket;
@@ -26,13 +27,14 @@ pub mod socket;
 #[path="../event/mod.rs"]
 pub mod event;
 
+
 /*
  * Struct representing a socket server
  */
-pub struct Server<'a> {
-    pub sockets: Vec<Socket<'a>>,
-    pub events: Vec<Event<'a>>,
-    pub to_event_loop: Sender<Action<'a>>,
+pub struct Server {
+    pub sockets: Vec<Socket>,
+    pub events: Vec<Event>,
+    pub to_event_loop: Sender<Action>,
     pub socket_id: String
 }
 
@@ -45,9 +47,9 @@ struct JsonMessage {
     data: String // json::encode() value expected
 }
 
-impl<'a> Server<'a> {
+impl Server {
     // Constructs a new Server
-    pub fn new() -> Server<'a> {
+    pub fn new() -> Server {
         let (tx, rx): (Sender<Action>, Receiver<Action>) = channel();
         Server {
             sockets: Vec::new(),
@@ -97,6 +99,9 @@ impl<'a> Server<'a> {
         }
     }
 
+    /*
+     * Sends the passed message to all currently connected sockets
+     */
     pub fn broadcast(&self, event: &str, data: String) {
         // Build a JsonMessage
         let json_msg = JsonMessage {
@@ -124,8 +129,8 @@ impl<'a> Server<'a> {
     }
 }
 
-impl<'a> Clone for Server<'a> {
-    fn clone(&self) -> Server<'a> {
+impl Clone for Server {
+    fn clone(&self) -> Server {
         Server {
             sockets: self.sockets.clone(),
             events: self.events.clone(),

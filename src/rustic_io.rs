@@ -35,6 +35,7 @@ mod socketmessenger;
 pub mod message;
 pub mod server;
 
+
 pub fn start(server: Server, ip: &str, port: u16) {
 
     /*

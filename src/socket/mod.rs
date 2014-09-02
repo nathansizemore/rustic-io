@@ -19,15 +19,15 @@ use std::io::{TcpStream};
  * Struct representing a websocket
  * id is the returned Sec-Socket-Key in return header
  */
-pub struct Socket<'a> {
+pub struct Socket {
 	pub id: String,
 	pub stream: TcpStream
 }
 
-impl<'a> Socket<'a> {
+impl Socket {
 
 	// Constructs a Socket object
-	pub fn new(id: &str, stream: TcpStream) -> Socket<'a> {
+	pub fn new(id: &str, stream: TcpStream) -> Socket {
 		Socket {
 			id: String::from_str(id),
 			stream: stream
@@ -35,8 +35,8 @@ impl<'a> Socket<'a> {
 	}
 }
 
-impl<'a> Clone for Socket<'a> {
-	fn clone(&self) -> Socket<'a> {
+impl Clone for Socket {
+	fn clone(&self) -> Socket {
 		Socket {
 			id: self.id.clone(),
 			stream: self.stream.clone()

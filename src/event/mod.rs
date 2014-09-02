@@ -20,15 +20,15 @@ use serialize::json;
  * Struct representing an event, and a function to execute
  * when that event is received from the client
  */
-pub struct Event<'a> {
+pub struct Event {
     pub name: String,
     pub execute: fn(data: json::Json, server: super::Server)
 }
 
-impl<'a> Event<'a> {
+impl Event {
 
     // Constructs an Event object
-    pub fn new(event: &str, execute: fn(data: json::Json, server: super::Server)) -> Event<'a> {
+    pub fn new(event: &str, execute: fn(data: json::Json, server: super::Server)) -> Event {
         Event {
             name: String::from_str(event),
             execute: execute
@@ -36,8 +36,8 @@ impl<'a> Event<'a> {
     }
 }
 
-impl<'a> Clone for Event<'a> {
-    fn clone(&self) -> Event<'a> {
+impl Clone for Event {
+    fn clone(&self) -> Event {
         Event {
             name: self.name.clone(),
             execute: self.execute
