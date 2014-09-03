@@ -13,8 +13,9 @@
 // 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 
-use super::server::socket::Socket;
-use super::message::{Message, TextOp, Text, BinaryOp, Binary};
+use super::Socket;
+use super::message::{Message, Text, Binary, TextOp, BinaryOp};
+
 
 /*
  * Struct representing an Action the Event Loop needs to execute

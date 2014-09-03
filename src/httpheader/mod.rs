@@ -20,12 +20,12 @@
  * 
  * http://tools.ietf.org/html/rfc6455 - For reference
  */
-extern crate serialize;
+
 extern crate rust_crypto = "rust-crypto";
 
 use self::rust_crypto::digest::Digest;
 use self::rust_crypto::sha1::Sha1;
-use self::serialize::base64::{ToBase64, STANDARD};
+use super::serialize::base64::{ToBase64, STANDARD};
 
 
 /*

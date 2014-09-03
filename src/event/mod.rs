@@ -22,13 +22,13 @@ use serialize::json;
  */
 pub struct Event {
     pub name: String,
-    pub execute: fn(data: json::Json, server: super::Server)
+    pub execute: fn(data: json::Json, server: super::Socket)
 }
 
 impl Event {
 
     // Constructs an Event object
-    pub fn new(event: &str, execute: fn(data: json::Json, server: super::Server)) -> Event {
+    pub fn new(event: &str, execute: fn(data: json::Json, server: super::Socket)) -> Event {
         Event {
             name: String::from_str(event),
             execute: execute

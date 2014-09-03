@@ -13,7 +13,7 @@
 // 0. You just DO WHAT THE FUCK YOU WANT TO.
 
 
-use super::message::Message;
+use super::socket::message::Message;
 
 /*
  * Represents a socket and the message channel to that socket

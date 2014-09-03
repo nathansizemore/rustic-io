@@ -19,47 +19,75 @@ extern crate collections;
 use std::str;
 use std::io::{TcpListener, TcpStream};
 use std::io::{Listener, Acceptor};
-use self::collections::treemap::TreeMap;
-use self::server::Server;
-use self::action::Action;
-use self::server::socket::Socket;
-use self::message::{Message, Text, Binary};
 use self::serialize::json;
 use self::serialize::json::Json;
-use self::socketmessenger::SocketMessenger;
+use self::collections::treemap::TreeMap;
+
+use self::socket::Socket;
+use self::socket::event::Event;
+use self::socket::action::Action;
+use self::socket::message::{Message, Text, Binary};
+use self::server::Server;
 use self::httpheader::{RequestHeader, ReturnHeader};
+use self::socketmessenger::SocketMessenger;
 
-mod httpheader;
-mod action;
-mod socketmessenger;
-pub mod message;
+pub mod socket;
 pub mod server;
+mod httpheader;
+mod socketmessenger;
 
+/*
+ * Returns a new Server
+ */
+pub fn bind(ip: &str, port: u16) -> Server {
+    Server {
+        ip: String::from_str(ip),
+        port: port.clone(),
+        events: Vec::new()
+    }    
+}
 
-pub fn start(server: Server, ip: &str, port: u16) {
+/*
+ * Starts the Event Loop and TCP/IP Server
+ */
+pub fn start(server: Server) {
+    // Event loop communication pipe
+    let (sender, receiver): (Sender<Action>, Receiver<Action>) = channel();
 
     /*
-     * Communication channel
-     *     - From HTTP Server to Event Loop (Action Passed)
+     * Event Loop Task
+     *
+     * Needs:
+     *  - Receiver (Closure captured)
+     *  - Sender (Sockets need to pass messages back into this loop)
+     *  - Vector of events to listen for
      */
-    let (to_event_loop, from_conn_pool): (Sender<Action>, Receiver<Action>) = channel();
-
-    // Start up event loop
-    let server_clone = server.clone();
-    let to_event_loop_clone = to_event_loop.clone();
+    let sender_clone = sender.clone();
+    let event_list = server.events.clone();    
     spawn(proc() {
-        event_loop(server_clone, from_conn_pool, to_event_loop_clone)
+        event_loop(receiver, sender_clone, event_list)
     });
 
-    // Start TCP server
-    let listener = TcpListener::bind(ip, port);
+    /*
+     * TCP/IP Server
+     *
+     * Intended to serve forever
+     */
+    let listener = TcpListener::bind(server.ip.as_slice(), server.port);
     let mut acceptor = listener.listen();
     for stream in acceptor.incoming() {
         match stream {
             Ok(stream) => {
-                let event_loop_msgr = to_event_loop.clone();
+                /*
+                 * Websocket Accept Task
+                 *
+                 * Needs:
+                 *  - TCPStream
+                 *  - Sender (To event loop)
+                 */
+                let to_event_loop = sender.clone();
                 spawn(proc() {                
-                    process_new_connection(stream, event_loop_msgr)
+                    process_new_connection(stream, to_event_loop)
                 })
             }
             Err(e) => {
@@ -67,6 +95,8 @@ pub fn start(server: Server, ip: &str, port: u16) {
             }            
         }
     }
+
+    // If we get here, drop resources to fds
     drop(acceptor);
 }
 
@@ -76,8 +106,8 @@ pub fn start(server: Server, ip: &str, port: u16) {
  *
  * Executed on separate thread.  Exits if the header is not found
  */
-fn process_new_connection(mut stream: TcpStream, to_conn_pool: Sender<Action>) {
-    let mut buffer = [0, ..1024]; // TODO - Determine a size based on modern borwsers
+fn process_new_connection(mut stream: TcpStream, sender: Sender<Action>) {
+    let mut buffer = [0, ..1024]; // TODO - Determine a header size based on modern borwsers
     match stream.read(buffer) {
         Ok(result) => {
             println!("Ok: {}", result)
@@ -91,16 +121,23 @@ fn process_new_connection(mut stream: TcpStream, to_conn_pool: Sender<Action>) {
     // Parse request for Sec-WebSocket-Key
     match str::from_utf8(buffer) {
         Some(header) => {
-            // println!("{}", header);
             let request_header = RequestHeader::new(header);
             if request_header.is_valid() {
                 let return_header = ReturnHeader::new_accept(request_header.sec_websocket_key.as_slice());
                 match stream.write(return_header.to_string().as_bytes()) {
                     Ok(result) => {
                         println!("New connection");
-                        let socket = Socket::new(return_header.sec_websocket_accept.as_slice(), stream);
+                        // Create new socket
+                        let socket = Socket {
+                            id: String::from_str(return_header.sec_websocket_accept.as_slice()),
+                            stream: stream,
+                            to_event_loop: sender.clone(),
+                            events: Vec::new()
+                        };
+
+                        // Tell event loop
                         let action = Action::new("new_connection", socket);
-                        to_conn_pool.send(action);
+                        sender.send(action);
                     }
                     Err(e) => {
                         println!("Error writing to stream: {}", e)
@@ -121,26 +158,41 @@ fn process_new_connection(mut stream: TcpStream, to_conn_pool: Sender<Action>) {
  *     - Listens for new sockets from TCP server
  *     - Listens for new events received from sockets
  */
-fn event_loop(server: Server, from_server: Receiver<Action>, to_event_loop: Sender<Action>) {
+fn event_loop(receiver: Receiver<Action>, sender: Sender<Action>, events: Vec<Event>) {
+    // Vector of socket ids and senders to each of their listen tasks
     let mut socket_msgers: Vec<SocketMessenger> = Vec::new();
     
     loop {
-        match from_server.try_recv() {
+        // Non-blocking message receive loop
+        match receiver.try_recv() {
             Ok(action) => {
                 match action.event.as_slice() {
                     "new_connection" => {
-                        let socket = action.socket.clone();
-                        let (to_socket, from_event_loop): (Sender<Message>, Receiver<Message>) = channel();
-                        let sock_msgr = SocketMessenger {
-                            id: socket.id.clone(),
-                            to_socket: to_socket.clone()   
+                        /*
+                         * New Socket Task
+                         *
+                         * Needs:
+                         *  - Clone of the socket (for it's stream)
+                         *  - Sender (For writes on the socket)
+                         *  - Receiver (To receive write events from event loop)
+                         */
+                        let (socket_sender, socket_receiver): (Sender<Message>, Receiver<Message>) = channel();
+                        let socket = Socket {
+                            id: action.socket.id.clone(),
+                            stream: action.socket.stream.clone(),
+                            to_event_loop: sender.clone(),
+                            events: events.clone()
                         };
-                        socket_msgers.push(sock_msgr);
-                        let mut socket_server = server.clone();
-                        socket_server.sockets.push(socket.clone());
-                        socket_server.to_event_loop = to_event_loop.clone();
+
+                        // Add socket and channel to messenger vector
+                        socket_msgers.push(SocketMessenger {
+                            id: socket.id.clone(),
+                            to_socket: socket_sender.clone()
+                        });
+
+                        // Start the socket task
                         spawn(proc() {
-                            start_new_socket(socket, from_event_loop, socket_server)
+                            start_new_socket(socket, socket_receiver)
                         });
                     }
                     "drop_connection" => {
@@ -176,26 +228,32 @@ fn event_loop(server: Server, from_server: Receiver<Action>, to_event_loop: Send
 /*
  * Starts the I/O process for a new socket connection
  */
-fn start_new_socket(socket: Socket, from_event_loop: Receiver<Message>, mut server: Server) {
-    // Start this socket's write stream in another process
-    let mut out_stream = socket.stream.clone();
+fn start_new_socket(socket: Socket, receiver: Receiver<Message>) {
+
+    /*
+     * Socket Write Task
+     *
+     * Needs
+     *  - Stream copy (For non-blocking i/o)
+     *  - Receiver (For messages from event loop)
+     */
+    let mut stream_write = socket.stream.clone();
     spawn(proc() {
         loop {
-            let msg = from_event_loop.recv();
-            msg.send(&mut out_stream).unwrap();
+            let msg = receiver.recv();
+            msg.send(&mut stream_write).unwrap();
         }
     });
 
     // Open up a blocking read on this socket
-    let mut in_stream = socket.stream.clone();
+    let mut stream_read = socket.stream.clone();
     loop {        
-        let msg = Message::load(&mut in_stream).unwrap();
+        let msg = Message::load(&mut stream_read).unwrap();
         match msg.payload {
             Text(ptr) => {
                 let json_slice = (*ptr).as_slice();
-                server.socket_id = socket.id.clone();
                 println!("Socket: {} recevied: {}", socket.id, json_slice);
-                parse_json(json_slice, server.clone());
+                parse_json(json_slice, socket.clone());
             }
             Binary(ptr) => {
                 // TODO - Do awesome binary shit
@@ -214,7 +272,7 @@ fn start_new_socket(socket: Socket, from_event_loop: Receiver<Message>, mut serv
  *         }
  *     }
  */
-fn parse_json(json_data: &str, server: Server) {
+fn parse_json(json_data: &str, socket: Socket) {
     match json::from_str(json_data) {
         Ok(result) => {
             println!("JSON decoded as: {}", result)
@@ -226,9 +284,9 @@ fn parse_json(json_data: &str, server: Server) {
                     match try_find_event(object) {
                         Some(event) => {
                             let data = get_json_data(object);
-                            for listening_for in server.events.iter() {
+                            for listening_for in socket.events.iter() {
                                 if event == listening_for.name {
-                                    (listening_for.execute)(data, server.clone());
+                                    (listening_for.execute)(data, socket.clone());
                                     break;
                                 }
                             }
@@ -294,34 +352,4 @@ fn get_json_data(treemap: &TreeMap<String, Json>) -> Json {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

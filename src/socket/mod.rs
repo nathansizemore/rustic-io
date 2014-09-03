@@ -14,32 +14,123 @@
 
 
 use std::io::{TcpStream};
+use super::serialize::json;
+use self::action::Action;
+use self::message::{Message, TextOp, Text, BinaryOp, Binary};
+use self::event::Event;
+
+
+#[path="../event/mod.rs"]
+pub mod event;
+
+#[path="../action/mod.rs"]
+pub mod action;
+
+#[path="../message/mod.rs"]
+pub mod message;
 
 /*
  * Struct representing a websocket
  * id is the returned Sec-Socket-Key in return header
  */
 pub struct Socket {
+
+	// Sec-Websocket-Accept
 	pub id: String,
-	pub stream: TcpStream
+
+	// Reference to stream
+	pub stream: TcpStream,
+
+	// Channel to event loop's receiver
+	pub to_event_loop: Sender<Action>,
+
+	// Vector of events listening for
+	pub events: Vec<Event>
+}
+
+/*
+ * Struct representing rustic-io's JSON message passing
+ *
+ * Encodes to
+ * {
+ * 		event: "EVENT_NAME",
+ * 		data: {
+ * 			// Stuff here
+ * 		}
+ * }
+ */
+#[deriving(Decodable, Encodable)]
+struct JsonMessage {
+
+	// Name of event being passed
+    event: String,
+
+    // json::encode() version of some struct
+    data: String
 }
 
 impl Socket {
 
-	// Constructs a Socket object
-	pub fn new(id: &str, stream: TcpStream) -> Socket {
-		Socket {
-			id: String::from_str(id),
-			stream: stream
-		}
-	}
+	/*
+     * "send" Action to the event loop
+     * id held in self.socket_id
+     *
+     * Probably not the best way, but Im retarded and did it
+     */
+    pub fn send(&self, event: &str, data: String) {
+        // Build a JsonMessage
+        let json_msg = JsonMessage {
+            event: String::from_str(event),
+            data: data
+        };
+
+        // Wrap it in the WebSocket bitmask
+        let msg = Message {
+            payload: Text(box String::from_str(json::encode(&json_msg).as_slice())),
+            mask: TextOp
+        };
+
+        // Send the message
+        let action = Action {
+            event: String::from_str("send"),
+            socket: self.clone(),
+            message: msg.clone()
+        };
+        self.to_event_loop.send(action);
+    }
+
+    /*
+     * Sends the passed message to all currently connected sockets
+     */
+    pub fn broadcast(&self, event: &str, data: String) {
+        // Build a JsonMessage
+        let json_msg = JsonMessage {
+            event: String::from_str(event),
+            data: data
+        };
+
+        // Wrap it in the WebSocket bitmask
+        let msg = Message {
+            payload: Text(box String::from_str(json::encode(&json_msg).as_slice())),
+            mask: TextOp
+        };
+
+        let action = Action {
+            event: String::from_str("broadcast"),
+            socket: self.clone(),
+            message: msg.clone()
+        };
+        self.to_event_loop.send(action);
+    }
 }
 
 impl Clone for Socket {
 	fn clone(&self) -> Socket {
 		Socket {
 			id: self.id.clone(),
-			stream: self.stream.clone()
+			stream: self.stream.clone(),
+            to_event_loop: self.to_event_loop.clone(),
+            events: self.events.clone()
 		}
 	}
 }
