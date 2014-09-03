@@ -24,8 +24,8 @@
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-use std::io::net::tcp::TcpStream;
-use std::io::IoResult;
+
+use std::io::{IoResult, IoError, TcpStream};
 use std::num;
 
 /*
@@ -65,57 +65,72 @@ impl Message {
      * of the operation
      */
     pub fn load(stream: &mut TcpStream) -> IoResult<Box<Message>> {
-        let vec1 = try!(stream.read_exact(2));
-        let buf1 = vec1.as_slice();
+        match stream.read_exact(2) {
+            Ok(vec1) => {
+                let buf1 = vec1.as_slice();
 
-        // Get the mask to determine type of data being sent
-        let mask = buf1[0] & 0b0000_1111;
-        let mask: Mask = num::from_u8(mask).unwrap();        
-        let pay_len = buf1[1] & 0b0111_1111;
+                // Get the mask to determine type of data being sent
+                let mask = buf1[0] & 0b0000_1111;
+                let mask: Mask = num::from_u8(mask).unwrap();        
+                let pay_len = buf1[1] & 0b0111_1111;
 
-        // Determine length of the payload
-        let payload_length = match pay_len {
-            127 => try!(stream.read_be_u64()), // 8 bytes in network byte order
-            126 => try!(stream.read_be_u16()) as u64, // 2 bytes in network byte order
-            _   => pay_len as u64
-        };
+                // Determine length of the payload
+                let payload_length = match pay_len {
+                    127 => try!(stream.read_be_u64()), // 8 bytes in network byte order
+                    126 => try!(stream.read_be_u16()) as u64, // 2 bytes in network byte order
+                    _   => pay_len as u64
+                };
 
-        // Grab the data from the stream
-        let masking_key_vec = try!(stream.read_exact(4));
-        let masking_key_buf = masking_key_vec.as_slice();
-        let masked_payload_buf = try!(stream.read_exact(payload_length as uint));
+                // Grab the payload information
+                match stream.read_exact(4) {
+                    Ok(masking_key_vec) => {
+                        // Grab the payload
+                        let masking_key_buf = masking_key_vec.as_slice();
+                        match stream.read_exact(payload_length as uint) {
+                            Ok(masked_payload_buf) => {
+                                let mut payload_buf = vec!();
+                                for (i, &octet) in masked_payload_buf.iter().enumerate() {
+                                    payload_buf.push(octet ^ masking_key_buf[i % 4]);
+                                }
 
-        // Grab the payload from the buffer
-        let mut payload_buf = vec!();
-        for (i, &octet) in masked_payload_buf.iter().enumerate() {
-            payload_buf.push(octet ^ masking_key_buf[i % 4]);
+                                // Build specific payload based on mask type
+                                let payload: Payload = match mask {
+                                    TextOp => {
+                                        Text(box String::from_utf8(payload_buf).unwrap())
+                                    }
+                                    BinaryOp => {
+                                        Binary(payload_buf)
+                                    }                                    
+                                    _ => {
+                                        unimplemented!()
+                                    }            
+                                };
+
+                                // Build result to return
+                                let message = box Message {
+                                    payload: payload,
+                                    mask: mask
+                                };
+
+                                return Ok(message);
+                            }
+                            Err(e) => {
+                                println!("Error: {}", e);
+                                return Err(e);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error: {}", e);
+                        return Err(e);
+                    }
+                }
+            }
+            Err(e) => {
+                println!("Error: {}", e);
+                return Err(e);
+            }
         }
-
-        // Build specific payload based on mask type
-        let payload: Payload = match mask {
-            TextOp => {
-                Text(box String::from_utf8(payload_buf).unwrap())
-            }
-            BinaryOp => {
-                Binary(payload_buf)
-            }
-
-            // TODO - Implement continuation and close shit
-            
-            _ => {
-                unimplemented!()
-            }            
-        };
-
-        // Build result to return
-        let message = box Message {
-            payload: payload,
-            mask: mask
-        };
-
-        // TODO - Implement Err shit
-
-        return Ok(message);
     }
 
     /*

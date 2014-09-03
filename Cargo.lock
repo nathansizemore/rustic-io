@@ -1,12 +1,12 @@
 [root]
 name = "rustic-io"
-version = "0.0.3"
+version = "0.0.5"
 dependencies = [
- "rust-crypto 0.1.0 (git+https://github.com/dagenix/rust-crypto#44317cac3c4b36a95ebd5654acbf0e1fff9c4b2e)",
+ "rust-crypto 0.1.0 (git+https://github.com/dagenix/rust-crypto#ee2034b5cafedd41c76d4b7ecb0e54805487514b)",
 ]
 
 [[package]]
 name = "rust-crypto"
 version = "0.1.0"
-source = "git+https://github.com/dagenix/rust-crypto#44317cac3c4b36a95ebd5654acbf0e1fff9c4b2e"
+source = "git+https://github.com/dagenix/rust-crypto#ee2034b5cafedd41c76d4b7ecb0e54805487514b"
 

@@ -236,27 +236,55 @@ fn start_new_socket(socket: Socket, receiver: Receiver<Message>) {
      * Needs
      *  - Stream copy (For non-blocking i/o)
      *  - Receiver (For messages from event loop)
+     *  - Receiver (For fail signal (If read task gets EOF))
      */
     let mut stream_write = socket.stream.clone();
+    let (sender, fail_receiver): (Sender<u16>, Receiver<u16>) = channel();
     spawn(proc() {
         loop {
-            let msg = receiver.recv();
-            msg.send(&mut stream_write).unwrap();
+            // Look for a signal to fail task
+            match fail_receiver.try_recv() {
+                Ok(kill) => {
+                    fail!("Write stream closed");
+                }
+                Err(e) => {
+                    // Do nothing, no signal is a good thing
+                }
+            }
+            // Look for a message from the event loop
+            match receiver.try_recv() {
+                Ok(msg) => {
+                    msg.send(&mut stream_write).unwrap();
+                }
+                Err(e) => {
+                    // Do nothing
+                }
+            }
         }
     });
 
     // Open up a blocking read on this socket
     let mut stream_read = socket.stream.clone();
-    loop {        
-        let msg = Message::load(&mut stream_read).unwrap();
-        match msg.payload {
-            Text(ptr) => {
-                let json_slice = (*ptr).as_slice();
-                println!("Socket: {} recevied: {}", socket.id, json_slice);
-                parse_json(json_slice, socket.clone());
+    loop {
+        match Message::load(&mut stream_read) {
+            Ok(msg) => {
+                match msg.payload {
+                    Text(ptr) => {
+                        let json_slice = (*ptr).as_slice();
+                        println!("Socket: {} recevied: {}", socket.id, json_slice);
+                        parse_json(json_slice, socket.clone());
+                    }
+                    Binary(ptr) => {
+                        // TODO - Do awesome binary shit
+                    }
+                }
             }
-            Binary(ptr) => {
-                // TODO - Do awesome binary shit
+            Err(e) =>{
+                println!("e.desc: {}", e.desc);
+                if e.desc == "end of file" {
+                    sender.send(1);
+                    fail!("Read stream closed");
+                }
             }
         }
     }    
