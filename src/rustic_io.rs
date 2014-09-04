@@ -110,7 +110,7 @@ fn process_new_connection(mut stream: TcpStream, sender: Sender<Action>) {
     let mut buffer = [0, ..1024]; // TODO - Determine a header size based on modern borwsers
     match stream.read(buffer) {
         Ok(result) => {
-            println!("Ok: {}", result)
+            //println!("Ok: {}", result)
         }
         Err(e) => {
             println!("Error reading incoming connection buffer: {}", e)
@@ -126,7 +126,7 @@ fn process_new_connection(mut stream: TcpStream, sender: Sender<Action>) {
                 let return_header = ReturnHeader::new_accept(request_header.sec_websocket_key.as_slice());
                 match stream.write(return_header.to_string().as_bytes()) {
                     Ok(result) => {
-                        println!("New connection");
+                        //println!("New connection");
                         // Create new socket
                         let socket = Socket {
                             id: String::from_str(return_header.sec_websocket_accept.as_slice()),
@@ -303,7 +303,7 @@ fn start_new_socket(socket: Socket, receiver: Receiver<Message>) {
 fn parse_json(json_data: &str, socket: Socket) {
     match json::from_str(json_data) {
         Ok(result) => {
-            println!("JSON decoded as: {}", result)
+            //println!("JSON decoded as: {}", result)
 
             // Try and parse Json as object
             match result.as_object() {
