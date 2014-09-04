@@ -1,6 +1,6 @@
 [root]
 name = "rustic-io"
-version = "0.0.6"
+version = "0.0.8"
 dependencies = [
  "rust-crypto 0.1.0 (git+https://github.com/dagenix/rust-crypto#33dfc81bba36a1cf31b8284504651d3b58d1e452)",
 ]

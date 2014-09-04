@@ -271,7 +271,7 @@ fn start_new_socket(socket: Socket, receiver: Receiver<Message>) {
                 match msg.payload {
                     Text(ptr) => {
                         let json_slice = (*ptr).as_slice();
-                        println!("Socket: {} recevied: {}", socket.id, json_slice);
+                        //println!("Socket: {} recevied: {}", socket.id, json_slice);
                         parse_json(json_slice, socket.clone());
                     }
                     Binary(ptr) => {
