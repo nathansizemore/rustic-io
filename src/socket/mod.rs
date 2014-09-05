@@ -44,6 +44,9 @@ pub struct Socket {
 	// Channel to event loop's receiver
 	pub to_event_loop: Sender<Action>,
 
+    // Channel to this socket's write task receiver
+    pub to_write_task: Sender<Message>,
+
 	// Vector of events listening for
 	pub events: Vec<Event>
 }
@@ -90,13 +93,8 @@ impl Socket {
             mask: TextOp
         };
 
-        // Send the message
-        let action = Action {
-            event: String::from_str("send"),
-            socket: self.clone(),
-            message: msg.clone()
-        };
-        self.to_event_loop.send(action);
+        // Send it out
+        self.to_write_task.send(msg);
     }
 
     /*
@@ -130,6 +128,7 @@ impl Clone for Socket {
 			id: self.id.clone(),
 			stream: self.stream.clone(),
             to_event_loop: self.to_event_loop.clone(),
+            to_write_task: self.to_write_task.clone(),
             events: self.events.clone()
 		}
 	}

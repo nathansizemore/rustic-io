@@ -126,12 +126,14 @@ fn process_new_connection(mut stream: TcpStream, sender: Sender<Action>) {
                 let return_header = ReturnHeader::new_accept(request_header.sec_websocket_key.as_slice());
                 match stream.write(return_header.to_string().as_bytes()) {
                     Ok(result) => {
-                        //println!("New connection");
+                        // Default sender for Socket
+                        let (tx, rx): (Sender<Message>, Receiver<Message>) = channel();
                         // Create new socket
                         let socket = Socket {
                             id: String::from_str(return_header.sec_websocket_accept.as_slice()),
                             stream: stream,
                             to_event_loop: sender.clone(),
+                            to_write_task: tx.clone(),
                             events: Vec::new()
                         };
 
@@ -181,6 +183,7 @@ fn event_loop(receiver: Receiver<Action>, sender: Sender<Action>, events: Vec<Ev
                             id: action.socket.id.clone(),
                             stream: action.socket.stream.clone(),
                             to_event_loop: sender.clone(),
+                            to_write_task: action.socket.to_write_task.clone(),
                             events: events.clone()
                         };
 
@@ -228,7 +231,7 @@ fn event_loop(receiver: Receiver<Action>, sender: Sender<Action>, events: Vec<Ev
 /*
  * Starts the I/O process for a new socket connection
  */
-fn start_new_socket(socket: Socket, receiver: Receiver<Message>) {
+fn start_new_socket(mut socket: Socket, broadcast_receiver: Receiver<Message>) {
 
     /*
      * Socket Write Task
@@ -237,11 +240,14 @@ fn start_new_socket(socket: Socket, receiver: Receiver<Message>) {
      *  - Stream copy (For non-blocking i/o)
      *  - Receiver (For messages from event loop)
      *  - Receiver (For fail signal (If read task gets EOF))
+     *  - Receiver (From socket read stream)
      */
     let mut stream_write = socket.stream.clone();
     let (sender, fail_receiver): (Sender<u16>, Receiver<u16>) = channel();
+    let (socket_sender, send_receiver): (Sender<Message>, Receiver<Message>) = channel();
     spawn(proc() {
         loop {
+
             // Look for a signal to fail task
             match fail_receiver.try_recv() {
                 Ok(kill) => {
@@ -251,8 +257,19 @@ fn start_new_socket(socket: Socket, receiver: Receiver<Message>) {
                     // Do nothing, no signal is a good thing
                 }
             }
+
             // Look for a message from the event loop
-            match receiver.try_recv() {
+            match broadcast_receiver.try_recv() {
+                Ok(msg) => {
+                    msg.send(&mut stream_write).unwrap();
+                }
+                Err(e) => {
+                    // Do nothing
+                }
+            }
+
+            // Look for a message from this client
+            match send_receiver.try_recv() {
                 Ok(msg) => {
                     msg.send(&mut stream_write).unwrap();
                 }
@@ -264,6 +281,7 @@ fn start_new_socket(socket: Socket, receiver: Receiver<Message>) {
     });
 
     // Open up a blocking read on this socket
+    socket.to_write_task = socket_sender;
     let mut stream_read = socket.stream.clone();
     loop {
         match Message::load(&mut stream_read) {
