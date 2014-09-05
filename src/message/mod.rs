@@ -34,7 +34,8 @@ use std::num;
 #[deriving(Clone)]
 pub enum Payload {
     Text(Box<String>),
-    Binary(Vec<u8>)
+    Binary(Vec<u8>),
+    Empty
 }
 
 /*
@@ -100,10 +101,13 @@ impl Message {
                                     }
                                     BinaryOp => {
                                         Binary(payload_buf)
-                                    }                                    
+                                    }
+                                    CloseOp => {
+                                        Empty
+                                    }
                                     _ => {
                                         unimplemented!()
-                                    }            
+                                    }
                                 };
 
                                 // Build result to return
@@ -142,6 +146,7 @@ impl Message {
         let payload_length = match self.payload {
             Text(ref p) => p.len(),
             Binary(ref p) => p.len(),
+            Empty => 0
         };
 
         // Write out the type of data
@@ -150,18 +155,25 @@ impl Message {
         // Write out the length of the data
         if payload_length <= 125 {
             try!(stream.write_u8(payload_length as u8));
-        } else if payload_length <= 65536 {
+        } else if payload_length <= 65535 {
             try!(stream.write_u8(126));
             try!(stream.write_be_u16(payload_length as u16));
-        } else if payload_length > 65536 {
+        } else if payload_length > 65535 {
             try!(stream.write_u8(127));
             try!(stream.write_be_u64(payload_length as u64));
         }
 
         // Write out the data
         match self.payload {
-            Text(ref p)   => try!(stream.write((*p).as_slice().as_bytes())),
-            Binary(ref p) => try!(stream.write((*p).as_slice())),
+            Text(ref p) => {
+                try!(stream.write((*p).as_slice().as_bytes()))
+            }
+            Binary(ref p) => {
+                try!(stream.write((*p).as_slice()))
+            }
+            Empty => {
+                ()
+            }
         }
 
         // Reset the stream

@@ -277,6 +277,9 @@ fn start_new_socket(socket: Socket, receiver: Receiver<Message>) {
                     Binary(ptr) => {
                         // TODO - Do awesome binary shit
                     }
+                    Empty => {
+                        // TODO - Implement close to write stream
+                    }
                 }
             }
             Err(e) =>{
