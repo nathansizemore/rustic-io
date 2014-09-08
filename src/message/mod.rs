@@ -134,7 +134,7 @@ impl Message {
                 println!("Error: {}", e);
                 return Err(e);
             }
-        }
+        }        
     }
 
     /*

@@ -289,7 +289,6 @@ fn start_new_socket(mut socket: Socket, broadcast_receiver: Receiver<Message>) {
                 match msg.payload {
                     Text(ptr) => {
                         let json_slice = (*ptr).as_slice();
-                        //println!("Socket: {} recevied: {}", socket.id, json_slice);
                         parse_json(json_slice, socket.clone());
                     }
                     Binary(ptr) => {
@@ -301,7 +300,6 @@ fn start_new_socket(mut socket: Socket, broadcast_receiver: Receiver<Message>) {
                 }
             }
             Err(e) =>{
-                println!("e.desc: {}", e.desc);
                 if e.desc == "end of file" {
                     sender.send(1);
                     fail!("Read stream closed");
@@ -324,12 +322,8 @@ fn start_new_socket(mut socket: Socket, broadcast_receiver: Receiver<Message>) {
 fn parse_json(json_data: &str, socket: Socket) {
     match json::from_str(json_data) {
         Ok(result) => {
-            //println!("JSON decoded as: {}", result)
-
-            // Try and parse Json as object
             match result.as_object() {
                 Some(object) => {
-                    // Get passed event
                     match try_find_event(object) {
                         Some(event) => {
                             let data = get_json_data(object);
