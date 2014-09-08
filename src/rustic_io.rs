@@ -107,7 +107,7 @@ pub fn start(server: Server) {
  * Executed on separate thread.  Exits if the header is not found
  */
 fn process_new_connection(mut stream: TcpStream, sender: Sender<Action>) {
-    let mut buffer = [0, ..1024]; // TODO - Determine a header size based on modern borwsers
+    let mut buffer = [0, ..1024]; // TODO - Determine a header size based on modern browsers
     match stream.read(buffer) {
         Ok(result) => {
             //println!("Ok: {}", result)
@@ -207,14 +207,6 @@ fn event_loop(receiver: Receiver<Action>, sender: Sender<Action>, events: Vec<Ev
                             msger.to_socket.send(action.message.clone())
                         }
                     }
-                    "send" => {
-                        // Find the handler to this socket's out stream
-                        for msger in socket_msgers.iter() {
-                            if msger.id == action.socket.id {
-                                msger.to_socket.send(action.message.clone())
-                            }
-                        }
-                    }
                     _ => {
                         println!("Event loop received unknown action: {}", action.event);
                     }
@@ -247,18 +239,15 @@ fn start_new_socket(mut socket: Socket, broadcast_receiver: Receiver<Message>) {
     let (socket_sender, send_receiver): (Sender<Message>, Receiver<Message>) = channel();
     spawn(proc() {
         loop {
-
-            // Look for a signal to fail task
             match fail_receiver.try_recv() {
                 Ok(kill) => {
                     fail!("Write stream closed");
                 }
                 Err(e) => {
-                    // Do nothing, no signal is a good thing
+                    // Do nothing
                 }
             }
-
-            // Look for a message from the event loop
+            
             match broadcast_receiver.try_recv() {
                 Ok(msg) => {
                     msg.send(&mut stream_write).unwrap();
@@ -268,7 +257,6 @@ fn start_new_socket(mut socket: Socket, broadcast_receiver: Receiver<Message>) {
                 }
             }
 
-            // Look for a message from this client
             match send_receiver.try_recv() {
                 Ok(msg) => {
                     msg.send(&mut stream_write).unwrap();

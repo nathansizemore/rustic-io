@@ -1,3 +1,6 @@
+# =============
+# Package Info
+# =============
 [package]
 name = "rustic-io"
 version = "0.1.0"
@@ -7,5 +10,37 @@ authors = ["nathanrsizmore@gmail.com"]
 name = "rustic-io"
 path = "src/rustic_io.rs"
 
+# =============
+# Dependencies
+# =============
 [dependencies.rust-crypto]
 git = "https://github.com/dagenix/rust-crypto"
+
+# ===============
+# Build Profiles
+# ===============
+
+# cargo build
+[profile.dev]
+opt-level = 0
+debug = true
+
+# cargo build --release
+[profile.release]
+opt-level = 3
+debug = false
+
+# cargo test
+[profile.test]
+opt-level = 0
+debug = true
+
+# cargo bench
+[profile.bench]
+opt-level = 3
+debug = false
+
+# cargo doc
+[profile.doc]
+opt-level = 0
+debug = true
