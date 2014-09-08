@@ -14,16 +14,11 @@ Incomplete. JavaScript library is now available.
   * JSON broadcasting to all sockets
 
 #### TODOs
-* **Crate It Up Correctly?**
-  * Work on the Cargo files, naming, organization to make this a more Rust-styled crate
-    * It works now, because I just randonly move shit until it compiles :)  But would like to get a better handle on the cargo files and versioning and stuffs
 * **HTTP Header**
   * Implement better parsing for incoming HTTP header
     * Right now, all it cares about is the Sec-WebSocket-Key field
 * **Binary Messages**
   * Implement the shit
-* **Disconnects/Closing Connections**
-  * Needs implemented
 
 #### Example Usage
 
