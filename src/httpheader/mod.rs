@@ -21,7 +21,7 @@
  * http://tools.ietf.org/html/rfc6455 - For reference
  */
 
-extern crate rust_crypto = "rust-crypto";
+extern crate "rust-crypto" as rust_crypto;
 
 use self::rust_crypto::digest::Digest;
 use self::rust_crypto::sha1::Sha1;
