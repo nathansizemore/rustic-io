@@ -21,7 +21,7 @@ use std::io::{TcpListener, TcpStream};
 use std::io::{Listener, Acceptor};
 use self::serialize::json;
 use self::serialize::json::Json;
-use self::collections::treemap::TreeMap;
+use self::collections::tree_map::TreeMap;
 
 use self::socket::Socket;
 use self::socket::event::Event;
@@ -39,10 +39,10 @@ mod socketmessenger;
 /*
  * Returns a new Server
  */
-pub fn bind(ip: &str, port: u16) -> Server {
+pub fn bind(ip: &str, port: &str) -> Server {
     Server {
         ip: String::from_str(ip),
-        port: port.clone(),
+        port: String::from_str(port),
         events: Vec::new()
     }    
 }
@@ -73,7 +73,11 @@ pub fn start(server: Server) {
      *
      * Intended to serve forever
      */
-    let listener = TcpListener::bind(server.ip.as_slice(), server.port);
+    let mut address = String::new();
+    address.push_str(server.ip.as_slice());
+    address.push_str(":");
+    address.push_str(server.port.as_slice());
+    let listener = TcpListener::bind(address.as_slice());
     let mut acceptor = listener.listen();
     for stream in acceptor.incoming() {
         match stream {
@@ -241,7 +245,7 @@ fn start_new_socket(mut socket: Socket, broadcast_receiver: Receiver<Message>) {
         loop {
             match fail_receiver.try_recv() {
                 Ok(kill) => {
-                    fail!("Write stream closed");
+                    panic!("Write stream closed");
                 }
                 Err(e) => {
                     // Do nothing
@@ -290,7 +294,7 @@ fn start_new_socket(mut socket: Socket, broadcast_receiver: Receiver<Message>) {
             Err(e) =>{
                 if e.desc == "end of file" {
                     sender.send(1);
-                    fail!("Read stream closed");
+                    panic!("Read stream closed");
                 }
             }
         }

@@ -23,7 +23,7 @@ use super::serialize::json::Json;
  */
 pub struct Server {
     pub ip: String,
-    pub port: u16,
+    pub port: String,
     pub events: Vec<Event>
 }
 

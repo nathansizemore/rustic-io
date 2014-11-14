@@ -150,10 +150,14 @@ impl ReturnHeader {
         stringified.push_str(self.upgrade.as_slice());
         stringified.push_str(self.connection.as_slice());
         stringified.push_str("Sec-Websocket-Accept: ");
-        unsafe {
-            let bytes = self.sec_websocket_accept.as_bytes();
-            stringified.push_bytes(bytes);
-        }
+
+        //let key_as_bytes = self.sec_websocket_accept.into_bytes();
+        stringified.push_str(self.sec_websocket_accept.as_slice());
+
+        // unsafe {
+        //     let bytes = self.sec_websocket_accept.as_bytes();
+        //     stringified.push_bytes(bytes);
+        // }
         stringified.push_str("\r\n\r\n");
         return stringified;
     }
