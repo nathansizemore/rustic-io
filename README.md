@@ -1,14 +1,12 @@
 rustic-io [<img src="https://travis-ci.org/nathansizemore/rustic-io.png?branch=master">](https://travis-ci.org/nathansizemore/rustic-io)
 =========
 
-rustic-io is a simple websocket server library written in Rust, inspired by socket.io.  It aims to be a fast, concurrent websocket server library for text and binary messages.
+rustic-io is a simple websocket server library written in Rust, inspired by socket.io.  It aims to be a easy to implement, fast, concurrent websocket server library for text and binary messages.
 
 Borrows messaging implementation from [rust-ws](https://github.com/ehsanul/rust-ws)
 
-Pull requests are welcomed, and encouraged; because I have no idea what I am doing.  I just started banging on the keyboard and this is what I ended up with.
-
 #### Current State
-Incomplete. JavaScript library is now available.
+Incomplete. JavaScript library is now available. Binary support coming soon.
 * **What you can currently do**
   * JSON messaging between sockets
   * JSON broadcasting to all sockets
