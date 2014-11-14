@@ -25,7 +25,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 
-use std::io::{IoResult, IoError, TcpStream};
+use std::io::{IoResult, TcpStream};
 use std::num;
 
 /*

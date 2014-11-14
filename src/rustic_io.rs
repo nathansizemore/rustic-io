@@ -130,8 +130,12 @@ fn process_new_connection(mut stream: TcpStream, sender: Sender<Action>) {
                 let return_header = ReturnHeader::new_accept(request_header.sec_websocket_key.as_slice());
                 match stream.write(return_header.to_string().as_bytes()) {
                     Ok(result) => {
-                        // Default sender for Socket
+                        /*
+                         * Default sender/receiver for socket.  It needs one to be initialzed,
+                         * This will throw a compiler warning, but needs to be ignored
+                         */
                         let (tx, rx): (Sender<Message>, Receiver<Message>) = channel();
+
                         // Create new socket
                         let socket = Socket {
                             id: String::from_str(return_header.sec_websocket_accept.as_slice()),
@@ -350,7 +354,7 @@ fn parse_json(json_data: &str, socket: Socket) {
  * returns None
  */
 fn try_find_event(treemap: &TreeMap<String, Json>) -> Option<String> {
-    match treemap.find(&String::from_str("event")) {
+    match treemap.get(&String::from_str("event")) {
         Some(value) => {
             if value.is_string() {
                 return Some(String::from_str(value.as_string().unwrap()));
@@ -370,7 +374,7 @@ fn try_find_event(treemap: &TreeMap<String, Json>) -> Option<String> {
  * an empty Json object (e.g. "{}")
  */
 fn get_json_data(treemap: &TreeMap<String, Json>) -> Json {
-    match treemap.find(&String::from_str("data")) {
+    match treemap.get(&String::from_str("data")) {
         Some(value) => {
             if value.is_object() {
                 return value.clone();
