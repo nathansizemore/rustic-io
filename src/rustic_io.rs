@@ -26,7 +26,8 @@ use self::collections::tree_map::TreeMap;
 use self::socket::Socket;
 use self::socket::event::Event;
 use self::socket::action::Action;
-use self::socket::message::{Message, Text, Binary};
+use self::socket::message::Message;
+use self::socket::message::Payload::{Text, Binary};
 use self::server::Server;
 use self::httpheader::{RequestHeader, ReturnHeader};
 use self::socketmessenger::SocketMessenger;
@@ -111,8 +112,8 @@ pub fn start(server: Server) {
  * Executed on separate thread.  Exits if the header is not found
  */
 fn process_new_connection(mut stream: TcpStream, sender: Sender<Action>) {
-    let mut buffer = [0, ..1024]; // TODO - Determine a header size based on modern browsers
-    match stream.read(buffer) {
+    let mut buffer = [0u8, ..512]; // TODO - Determine a header size based on modern browsers
+    match stream.read(&mut buffer) {
         Ok(result) => {
             //println!("Ok: {}", result)
         }
@@ -123,7 +124,7 @@ fn process_new_connection(mut stream: TcpStream, sender: Sender<Action>) {
     }
     
     // Parse request for Sec-WebSocket-Key
-    match str::from_utf8(buffer) {
+    match str::from_utf8(buffer.as_slice()) {
         Some(header) => {
             let request_header = RequestHeader::new(header);
             if request_header.is_valid() {

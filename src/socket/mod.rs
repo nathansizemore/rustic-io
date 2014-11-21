@@ -16,7 +16,9 @@
 use std::io::{TcpStream};
 use super::serialize::json;
 use self::action::Action;
-use self::message::{Message, TextOp, Text, BinaryOp, Binary};
+use self::message::Message;
+use self::message::Payload::{Text, Binary};
+use self::message::Mask::{TextOp, BinaryOp};
 use self::event::Event;
 
 

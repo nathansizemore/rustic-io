@@ -96,14 +96,14 @@ impl Message {
 
                                 // Build specific payload based on mask type
                                 let payload: Payload = match mask {
-                                    TextOp => {
-                                        Text(box String::from_utf8(payload_buf).unwrap())
+                                    Mask::TextOp => {
+                                        Payload::Text(box String::from_utf8(payload_buf).unwrap())
                                     }
-                                    BinaryOp => {
-                                        Binary(payload_buf)
+                                    Mask::BinaryOp => {
+                                        Payload::Binary(payload_buf)
                                     }
-                                    CloseOp => {
-                                        Empty
+                                    Mask::CloseOp => {
+                                        Payload::Empty
                                     }
                                     _ => {
                                         unimplemented!()
@@ -144,9 +144,9 @@ impl Message {
 
         // Grab the length of the data being sent
         let payload_length = match self.payload {
-            Text(ref p) => p.len(),
-            Binary(ref p) => p.len(),
-            Empty => 0
+            Payload::Text(ref p) => p.len(),
+            Payload::Binary(ref p) => p.len(),
+            Payload::Empty => 0
         };
 
         // Write out the type of data
@@ -165,13 +165,13 @@ impl Message {
 
         // Write out the data
         match self.payload {
-            Text(ref p) => {
+            Payload::Text(ref p) => {
                 try!(stream.write((*p).as_slice().as_bytes()))
             }
-            Binary(ref p) => {
+            Payload::Binary(ref p) => {
                 try!(stream.write((*p).as_slice()))
             }
-            Empty => {
+            Payload::Empty => {
                 ()
             }
         }

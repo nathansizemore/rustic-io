@@ -14,7 +14,9 @@
 
 
 use super::Socket;
-use super::message::{Message, Text, Binary, TextOp, BinaryOp};
+use super::message::Message;
+use super::message::Payload::{Text, Binary};
+use super::message::Mask::{TextOp, BinaryOp};
 
 
 /*

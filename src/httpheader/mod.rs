@@ -55,8 +55,10 @@ pub struct ReturnHeader {
 }
 
 impl RequestHeader {
-    // COnstructs a new RequestHeader struct
+
+    // Constructs a new RequestHeader struct
     pub fn new(header: &str) -> RequestHeader {
+
         // Build a default header
         let mut request_header = RequestHeader {
             upgrade: String::from_str(""),
@@ -129,7 +131,7 @@ impl ReturnHeader {
 
         //Get the SHA-1 Hash as bytes
         let mut out = [0u8, ..20];
-        ReturnHeader::sha1_hash(pre_hash.as_slice(), out);
+        ReturnHeader::sha1_hash(pre_hash.as_slice(), &mut out);
 
         //Base64 encode the buffer
         let config = STANDARD;
