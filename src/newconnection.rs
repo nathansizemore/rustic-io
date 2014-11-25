@@ -23,3 +23,23 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
+
+
+use std::io::TcpStream;
+
+/*
+ * Represents a new connection
+ */
+pub struct NewConnetion {
+    stream: TcpStream
+}
+
+impl NewConnetion {
+
+    // Constructs a new NewConnection
+    pub fn new(stream: TcpStream) -> NewConnection {
+        NewConnection {
+            stream: stream.clone()
+        }
+    }
+}

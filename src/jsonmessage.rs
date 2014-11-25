@@ -23,3 +23,27 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
+
+
+use std::str;
+
+/*
+ * Struct representing rustic-io's JSON message passing schema
+ *
+ * Encodes to
+ * {
+ *      event: "EVENT_NAME",
+ *      data: {
+ *          // Stuff here
+ *      }
+ * }
+ */
+#[deriving(Decodable, Encodable)]
+pub struct JsonMessage {
+
+    // Name of event being passed
+    event: String,
+
+    // json::encode() version of some struct
+    data: String
+}

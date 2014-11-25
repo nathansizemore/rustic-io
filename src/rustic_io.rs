@@ -1,16 +1,28 @@
-// DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-// Version 2, December 2004
+// Copyright (c) 2014 Nathan Sizemore
 
-// Copyright (C) 2014 Nathan Sizemore <nathanrsizemore@gmail.com>
+// Permission is hereby granted, free of charge, to any
+// person obtaining a copy of this software and associated
+// documentation files (the "Software"), to deal in the
+// Software without restriction, including without
+// limitation the rights to use, copy, modify, merge,
+// publish, distribute, sublicense, and/or sell copies of
+// the Software, and to permit persons to whom the Software
+// is furnished to do so, subject to the following
+// conditions:
 
-// Everyone is permitted to copy and distribute verbatim or modified
-// copies of this license document, and changing it is allowed as long
-// as the name is changed.
+// The above copyright notice and this permission notice
+// shall be included in all copies or substantial portions
+// of the Software.
 
-// DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-// TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
-
-// 0. You just DO WHAT THE FUCK YOU WANT TO.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+// ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+// TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+// PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+// SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+// IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+// DEALINGS IN THE SOFTWARE.
 
 
 extern crate serialize;
@@ -19,215 +31,95 @@ extern crate collections;
 use std::str;
 use std::io::{TcpListener, TcpStream};
 use std::io::{Listener, Acceptor};
-use self::serialize::json;
-use self::serialize::json::Json;
-use self::collections::tree_map::TreeMap;
+use serialize::json;
+use serialize::json::Json;
+use collections::tree_map::TreeMap;
 
-use self::socket::Socket;
-use self::socket::event::Event;
-use self::socket::action::Action;
-use self::socket::message::Message;
-use self::socket::message::Payload::{Text, Binary};
-use self::server::Server;
-use self::httpheader::{RequestHeader, ReturnHeader};
-use self::socketmessenger::SocketMessenger;
+use socket::Socket;
+use event::Event;
+use action::Action;
+use message::Message;
+use message::Payload::{Text, Binary};
+use server::Server;
+use httpheader::{RequestHeader, ReturnHeader};
+use socketmessenger::SocketMessenger;
 
-pub mod socket;
-pub mod server;
-mod httpheader;
-mod socketmessenger;
 
 /*
  * Returns a new Server
  */
-pub fn bind(ip: &str, port: &str) -> Server {
-    Server {
-        ip: String::from_str(ip),
-        port: String::from_str(port),
-        events: Vec::new()
-    }    
+pub fn new_server(ip: &str, port: &str) -> Server {
+    return Server::new(ip, port);
 }
 
 /*
- * Starts the Event Loop and TCP/IP Server
+ * Starts the Event Loop and TCP Server
  */
 pub fn start(server: Server) {
-    // Event loop communication pipe
-    let (sender, receiver): (Sender<Action>, Receiver<Action>) = channel();
 
-    /*
-     * Event Loop Task
-     *
-     * Needs:
-     *  - Receiver (Closure captured)
-     *  - Sender (Sockets need to pass messages back into this loop)
-     *  - Vector of events to listen for
-     */
-    let sender_clone = sender.clone();
-    let event_list = server.events.clone();    
+    // Start the event loop
+    let (action_sender, action_receiver): (Sender<String>, Receiver<String>) = channel();
+    let (new_conn_sender, new_conn_receiver): (Sender<TcpStream>, Receiver<TcpStream>) = channel();
+
+    let event_list = server.events.clone();
     spawn(proc() {
-        event_loop(receiver, sender_clone, event_list)
+        event_loop::start(action_sender, action_receiver, new_conn_receiver, event_list)
     });
 
-    /*
-     * TCP/IP Server
-     *
-     * Intended to serve forever
-     */
+    // Start TCP Server
     let mut address = String::new();
-    address.push_str(server.ip.as_slice());
-    address.push_str(":");
-    address.push_str(server.port.as_slice());
+    address.push_str(server.ip.as_slice())
+        .push_str(":")
+        .push_str(server.port.as_slice());
+
     let listener = TcpListener::bind(address.as_slice());
     let mut acceptor = listener.listen();
     for stream in acceptor.incoming() {
         match stream {
             Ok(stream) => {
-                /*
-                 * Websocket Accept Task
-                 *
-                 * Needs:
-                 *  - TCPStream
-                 *  - Sender (To event loop)
-                 */
-                let to_event_loop = sender.clone();
-                spawn(proc() {                
-                    process_new_connection(stream, to_event_loop)
+                spawn(proc() {
+                    process_new_tcp_connection(stream, new_conn_sender)
                 })
             }
             Err(e) => {
-                println!("Error accepting connection: {}", e)
-            }            
+                println!("Error accepting incoming tcp connection...");
+                println!("{}", e);
+            }
         }
     }
-
-    // If we get here, drop resources to fds
     drop(acceptor);
 }
 
 /*
- * Accepts and parses input stream from a new connection
- * looking for the Sec-WebSocket-Key header in the HTTP/1.1 Request
- *
- * Executed on separate thread.  Exits if the header is not found
+ * Grabs the request from the stream and attempts to parse as an HTTP WebSocket Request header
+ * If successful, sends the stream to the event to start a connection
+ * Fails silently
  */
-fn process_new_connection(mut stream: TcpStream, sender: Sender<Action>) {
-    let mut buffer = [0u8, ..512]; // TODO - Determine a header size based on modern browsers
-    match stream.read(&mut buffer) {
-        Ok(result) => {
-            //println!("Ok: {}", result)
-        }
-        Err(e) => {
-            println!("Error reading incoming connection buffer: {}", e)
-            return;
-        }
-    }
-    
-    // Parse request for Sec-WebSocket-Key
+fn process_new_tcp_connection(mut stream: TcpStream, new_conn_sender: Sender<TcpStream>) {
+    let mut buffer = [0u8, ..512]; // Incoming HTTP header size
+    stream.read(&mut buffer).unwrap();
+
     match str::from_utf8(buffer.as_slice()) {
         Some(header) => {
             let request_header = RequestHeader::new(header);
-            if request_header.is_valid() {
-                let return_header = ReturnHeader::new_accept(request_header.sec_websocket_key.as_slice());
+            if (request_header.is_valid()) {
+                let return_header = ReturnHeader::new(request_header.sec_websocket_key.as_slice());
                 match stream.write(return_header.to_string().as_bytes()) {
                     Ok(result) => {
-                        /*
-                         * Default sender/receiver for socket.  It needs one to be initialzed,
-                         * This will throw a compiler warning, but needs to be ignored
-                         */
-                        let (tx, rx): (Sender<Message>, Receiver<Message>) = channel();
-
-                        // Create new socket
-                        let socket = Socket {
-                            id: String::from_str(return_header.sec_websocket_accept.as_slice()),
-                            stream: stream,
-                            to_event_loop: sender.clone(),
-                            to_write_task: tx.clone(),
-                            events: Vec::new()
-                        };
-
-                        // Tell event loop
-                        let action = Action::new("new_connection", socket);
-                        sender.send(action);
+                        new_conn_sender.send(stream.clone());
                     }
                     Err(e) => {
-                        println!("Error writing to stream: {}", e)
+                        // User must have closed connection
                     }
                 }
-            } else {
-                println!("Request header invalid");
             }
         }
         None => {
-            println!("Buffer not valid UTF-8")
+            // Buffer wasn't valid UTF-8
         }
     }
 }
 
-/*
- * Event Loop
- *     - Listens for new sockets from TCP server
- *     - Listens for new events received from sockets
- */
-fn event_loop(receiver: Receiver<Action>, sender: Sender<Action>, events: Vec<Event>) {
-    // Vector of socket ids and senders to each of their listen tasks
-    let mut socket_msgers: Vec<SocketMessenger> = Vec::new();
-    
-    loop {
-        // Non-blocking message receive loop
-        match receiver.try_recv() {
-            Ok(action) => {
-                match action.event.as_slice() {
-                    "new_connection" => {
-                        /*
-                         * New Socket Task
-                         *
-                         * Needs:
-                         *  - Clone of the socket (for it's stream)
-                         *  - Sender (For writes on the socket)
-                         *  - Receiver (To receive write events from event loop)
-                         */
-                        let (socket_sender, socket_receiver): (Sender<Message>, Receiver<Message>) = channel();
-                        let socket = Socket {
-                            id: action.socket.id.clone(),
-                            stream: action.socket.stream.clone(),
-                            to_event_loop: sender.clone(),
-                            to_write_task: action.socket.to_write_task.clone(),
-                            events: events.clone()
-                        };
-
-                        // Add socket and channel to messenger vector
-                        socket_msgers.push(SocketMessenger {
-                            id: socket.id.clone(),
-                            to_socket: socket_sender.clone()
-                        });
-
-                        // Start the socket task
-                        spawn(proc() {
-                            start_new_socket(socket, socket_receiver)
-                        });
-                    }
-                    "drop_connection" => {
-
-                    }
-                    "broadcast" => {
-                        // Send the message to everyone
-                        for msger in socket_msgers.iter() {
-                            msger.to_socket.send(action.message.clone())
-                        }
-                    }
-                    _ => {
-                        println!("Event loop received unknown action: {}", action.event);
-                    }
-                }
-            }
-            Err(e) => {
-                // Do nothing.
-                // try_recv() returns Err when no message is available
-            }
-        }
-    }
-}
 
 /*
  * Starts the I/O process for a new socket connection
@@ -244,7 +136,7 @@ fn start_new_socket(mut socket: Socket, broadcast_receiver: Receiver<Message>) {
      *  - Receiver (From socket read stream)
      */
     let mut stream_write = socket.stream.clone();
-    let (sender, fail_receiver): (Sender<u16>, Receiver<u16>) = channel();
+    let (fail_sender, fail_receiver): (Sender<u16>, Receiver<u16>) = channel();
     let (socket_sender, send_receiver): (Sender<Message>, Receiver<Message>) = channel();
     spawn(proc() {
         loop {
@@ -252,27 +144,21 @@ fn start_new_socket(mut socket: Socket, broadcast_receiver: Receiver<Message>) {
                 Ok(kill) => {
                     panic!("Write stream closed");
                 }
-                Err(e) => {
-                    // Do nothing
-                }
+                Err(e) => { /* Dont care */ }
             }
             
             match broadcast_receiver.try_recv() {
                 Ok(msg) => {
                     msg.send(&mut stream_write).unwrap();
                 }
-                Err(e) => {
-                    // Do nothing
-                }
+                Err(e) => { /* Dont care */ }
             }
 
             match send_receiver.try_recv() {
                 Ok(msg) => {
                     msg.send(&mut stream_write).unwrap();
                 }
-                Err(e) => {
-                    // Do nothing
-                }
+                Err(e) => { /* Dont care */ }
             }
         }
     });
@@ -298,7 +184,7 @@ fn start_new_socket(mut socket: Socket, broadcast_receiver: Receiver<Message>) {
             }
             Err(e) =>{
                 if e.desc == "end of file" {
-                    sender.send(1);
+                    fail_sender.send(1);
                     panic!("Read stream closed");
                 }
             }

@@ -23,3 +23,36 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
+
+extern crate serialize;
+
+use serialize::json;
+
+/*
+ * Struct representing an event, and a function to execute
+ * when that event is received from the client
+ */
+pub struct Event {
+    pub name: String,
+    pub execute: fn(data: json::Json, server: super::Socket)
+}
+
+impl Event {
+
+    // Constructs an Event object
+    pub fn new(event: &str, execute: fn(data: json::Json, server: super::Socket)) -> Event {
+        Event {
+            name: String::from_str(event),
+            execute: execute
+        }
+    }
+}
+
+impl Clone for Event {
+    fn clone(&self) -> Event {
+        Event {
+            name: self.name.clone(),
+            execute: self.execute
+        }
+    }
+}

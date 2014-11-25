@@ -23,3 +23,14 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
+
+
+use super::socket::message::Message;
+
+/*
+ * Represents a socket and the message channel to that socket
+ */
+pub struct SocketMessenger {
+    pub id: String,
+    pub to_socket: Sender<Message>
+}

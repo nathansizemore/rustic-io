@@ -23,3 +23,49 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
+
+
+use std::str;
+
+/*
+ * Struct representing a WebSocket server
+ */
+pub struct Server {
+    pub ip: String,
+    pub port: String,
+    pub events: Vec<Event>
+}
+
+impl Server {
+
+    /*
+     * Constructs a new Server
+     */
+    pub fn new(ip_addr: &str, port: &str) -> Server {
+        return Server {
+            ip: String::from_str(ip_addr),
+            port: String::from_str(port),
+            events: Vec::new()
+        }
+    }
+
+    /*
+     * Adds the passed event and function pointer to end of the events vector
+     */
+    pub fn on(&mut self, event_name: &str, execute: fn(data: Json, socket: Socket)) {
+        self.events.push(Event::new(event_name, execute));
+    }
+}
+
+/*
+ * Returns a clone of the current server
+ */
+impl Clone for Server {
+    fn clone(&self) -> Server {
+        Server {
+            ip: self.ip.clone(),
+            port: self.port.clone(),
+            events: self.events.clone()
+        }
+    }
+}
