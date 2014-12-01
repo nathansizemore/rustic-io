@@ -26,12 +26,30 @@
 
 
 use std::str;
-use action::Action;
+use std::rand;
+use std::rand::Rng;
 use std::io::TcpStream;
 use std::comm::TryRecvError;
 
+use super::action::Action;
+use super::message::Message;
+use super::event::Event;
+use super::socket::Socket;
 
-pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>
+
+/*
+ * Represents a socket and the message channel to that socket
+ */
+pub struct SocketMessenger {
+    pub id: String,
+    pub to_socket: Sender<Message>
+}
+
+
+/*
+ *
+ */
+pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
     new_conn_receiver: Receiver<TcpStream>, events: Vec<Event>) {
 
     // Vector of socket ids and senders to each of their listening tasks
@@ -44,12 +62,13 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>
                 // Generate id, create channel, and socket
                 let id = generate_socket_id();
                 let (socket_sender, from_event_loop_recvr): (Sender<Message>, Receiver<Message>) = channel();
-                let socket = Socket {
+                let mut socket = Socket {
                     id: id.clone(),
                     stream: stream.clone(),
                     to_event_loop: action_sender.clone(),
+                    to_write_task: socket_sender.clone(), // This just here because we need some value
                     events: events.clone()
-                }
+                };
 
                 // Add socket and channel to messenger vector
                 socket_msngers.push(SocketMessenger {
@@ -66,15 +85,14 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>
         // Check for incoming actions to take
         match action_receiver.try_recv() {
             Ok(action) => {
+                println!("Action: {}", action.event.as_slice());
                 match action.event.as_slice() {
                     "broadcast" => {
                         for msnger in socket_msngers.iter() {
                             msnger.to_socket.send(action.message.clone())
                         }
                     }
-                    _ => {
-                        println!("Action: {} is currently not implemented");
-                    }
+                    _ => { /* Do nothing */ }
                 }
             }
             Err(e) => {
@@ -92,9 +110,11 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>
 }
 
 fn generate_socket_id() -> String {
+    let mut rng = rand::task_rng();
     let mut string = String::new();
-    for char in rand::task_rng().gen_ascii_chars().take(15) {
-        string.push_char(n);
+
+    for x in range(0i, 15i) {
+        string.push(rng.gen::<char>());
     }
     string
 }

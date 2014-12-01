@@ -1,0 +1,28 @@
+[root]
+name = "rustic-io"
+version = "0.1.4"
+dependencies = [
+ "rust-crypto 0.1.2 (git+https://github.com/dagenix/rust-crypto)",
+]
+
+[[package]]
+name = "gcc"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "rust-crypto"
+version = "0.1.2"
+source = "git+https://github.com/dagenix/rust-crypto#cab70d0b17f23aae1a844d8ae7490a7ee4403a32"
+dependencies = [
+ "time 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "time"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "gcc 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+

@@ -28,48 +28,17 @@ pub struct Foo {
 }
 
 fn main() {
-    let mut server = Server::new();
-    server.on("tell_just_me", tell_just_me);
-    server.on("tell_erry_body", tell_erry_body);
-    rustic_io::start(server, "127.0.0.1", 1338);
+    let mut server = rustic_io::new_server("127.0.0.1", "1338");
+    server.on("some_event", function_to_execute);
+    rustic_io::start(server);
 }
 
-fn tell_just_me(data: json::Json, server: Server) {
-    let json_object = data.as_object().unwrap();
-    let msg = json_object.find(&String::from_str("msg")).unwrap().as_string().unwrap();
-    server.send("echo", json::encode(&Foo {
-        msg: String::from_str(msg)
-    }));
-}
-
-fn tell_erry_body(data: json::Json, server: Server) {
+fn function_to_execute(data: json::Json, server: Server) {
     let json_object = data.as_object().unwrap();
     let msg = json_object.find(&String::from_str("msg")).unwrap().as_string().unwrap();
     server.broadcast("echo", json::encode(&Foo {
         msg: String::from_str(msg)
     }));
-}
-```
-##### In the Browser
-```javascript
-function main() {
-    // Create a socket
-    var socket = new rustic_io('127.0.0.1', 1338);
-
-    // Listen for events
-    socket.on('echo', function(socket, data) {
-        // Do some shit with data
-
-        // Want to send the server something else?
-        socket.send('something else', {
-            something: 'else'
-        });
-    });
-
-    // Send events
-    socket.send('hello', {
-        msg: 'What up, Rust?'
-    });
 }
 ```
 

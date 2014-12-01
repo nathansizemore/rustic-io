@@ -30,13 +30,12 @@
  * Text/Binary messaging.  Covering all websocket connection
  * types is outside the intent of this module.
  * 
- * http://tools.ietf.org/html/rfc6455 - For reference
+ * http://tools.ietf.org/html/rfc6455
  */
 
-extern crate "rust-crypto" as rust_crypto;
 
-use self::rust_crypto::digest::Digest;
-use self::rust_crypto::sha1::Sha1;
+use super::rust_crypto::digest::Digest;
+use super::rust_crypto::sha1::Sha1;
 use super::serialize::base64::{ToBase64, STANDARD};
 
 
@@ -141,11 +140,11 @@ impl ReturnHeader {
         let mut pre_hash = String::from_str(key);
         pre_hash.push_str("258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
 
-        //Get the SHA-1 Hash as bytes
+        // Get the SHA-1 Hash as bytes
         let mut out = [0u8, ..20];
         ReturnHeader::sha1_hash(pre_hash.as_slice(), &mut out);
 
-        //Base64 encode the buffer
+        // Base64 encode the buffer
         let config = STANDARD;
         let encoded = out.to_base64(config);
 

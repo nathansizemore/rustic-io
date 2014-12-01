@@ -25,7 +25,13 @@
 // DEALINGS IN THE SOFTWARE.
 
 
+extern crate serialize;
+
 use std::str;
+use self::serialize::json::Json;
+
+use super::event::Event;
+use super::socket::Socket;
 
 /*
  * Struct representing a WebSocket server

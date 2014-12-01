@@ -25,7 +25,6 @@
 // DEALINGS IN THE SOFTWARE.
 
 
-use super::Socket;
 use super::message::Message;
 use super::message::Payload::{Text, Binary};
 use super::message::Mask::{TextOp, BinaryOp};
@@ -33,23 +32,16 @@ use super::message::Mask::{TextOp, BinaryOp};
 
 /*
  * Struct representing an Action the Event Loop needs to execute
- *
- * Current supported actions:
- *  - "new_connection"
- *  - "drop_connection"
- *  - "broadcast"
- *  - "send"
  */
 pub struct Action {
     pub event: String,
-    pub socket: Socket,
     pub message: Message
 }
 
 impl Action {
 
     // Constructs a new action
-    pub fn new(event: &str, socket: Socket) -> Action {
+    pub fn new(event: &str) -> Action {
         // Build a default message for when action does not need a message
         let (payload, mask) = (Text(box String::from_str("blah, blah")), TextOp);
         let msg = Message {
@@ -59,7 +51,6 @@ impl Action {
 
         Action {
             event: String::from_str(event),
-            socket: socket,
             message: msg.clone()
         }
     }

@@ -24,9 +24,10 @@
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-extern crate serialize;
 
-use serialize::json;
+use super::serialize::json::Json;
+
+use super::socket::Socket;
 
 /*
  * Struct representing an event, and a function to execute
@@ -34,13 +35,13 @@ use serialize::json;
  */
 pub struct Event {
     pub name: String,
-    pub execute: fn(data: json::Json, server: super::Socket)
+    pub execute: fn(data: Json, server: Socket)
 }
 
 impl Event {
 
     // Constructs an Event object
-    pub fn new(event: &str, execute: fn(data: json::Json, server: super::Socket)) -> Event {
+    pub fn new(event: &str, execute: fn(data: Json, server: Socket)) -> Event {
         Event {
             name: String::from_str(event),
             execute: execute
