@@ -14,7 +14,8 @@ path = "src/rustic_io.rs"
 # Dependencies
 # =============
 [dependencies.rust-crypto]
-git = "https://github.com/dagenix/rust-crypto"
+rust-crypto = "~0.1.2"
+#git = "https://github.com/dagenix/rust-crypto"
 
 # ===============
 # Build Profiles

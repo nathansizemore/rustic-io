@@ -104,7 +104,7 @@ fn process_new_tcp_connection(mut stream: TcpStream, new_conn_sender: Sender<Tcp
     match str::from_utf8(buffer.as_slice()) {
         Some(header) => {
             let request_header = RequestHeader::new(header);
-            if (request_header.is_valid()) {
+            if request_header.is_valid() {
                 let return_header = ReturnHeader::new(request_header.sec_websocket_key.as_slice());
                 match stream.write(return_header.to_string().as_bytes()) {
                     Ok(result) => {
