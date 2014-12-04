@@ -78,6 +78,8 @@ impl Socket {
         let (fail_sender, fail_receiver): (Sender<uint>, Receiver<uint>) = channel();
         let (write_task_sender, write_task_receiver): (Sender<Message>, Receiver<Message>) = channel();
         self.to_write_task = write_task_sender;
+        let my_id = self.id.clone();
+        let to_event_loop = self.to_event_loop.clone();
 
         // Socket out logic/write stream
         // Non-blocking
@@ -87,6 +89,15 @@ impl Socket {
                 // Check for fail message
                 match fail_receiver.try_recv() {
                     Ok(kill) => {
+                        let drop_socket = Action {
+                            event: String::from_str("drop_socket"),
+                            message: Message {
+                                payload: Text(box String::from_str("")),
+                                mask: TextOp
+                            },
+                            socket_id: my_id.clone()
+                        };
+                        to_event_loop.send(drop_socket);
                         panic!("Write stream closed");
                     }
                     Err(e) => { /* Dont care */ }
@@ -198,7 +209,8 @@ impl Socket {
 
         let action = Action {
             event: String::from_str("broadcast"),
-            message: msg.clone()
+            message: msg.clone(),
+            socket_id: self.id.clone()
         };
         
         self.to_event_loop.send(action);

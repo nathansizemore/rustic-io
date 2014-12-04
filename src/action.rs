@@ -35,7 +35,8 @@ use super::message::Mask::{TextOp, BinaryOp};
  */
 pub struct Action {
     pub event: String,
-    pub message: Message
+    pub message: Message,
+    pub socket_id: String
 }
 
 impl Action {
@@ -51,7 +52,8 @@ impl Action {
 
         Action {
             event: String::from_str(event),
-            message: msg.clone()
+            message: msg.clone(),
+            socket_id: String::from_str("")
         }
     }
 }
