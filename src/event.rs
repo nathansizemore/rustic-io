@@ -50,6 +50,10 @@ impl Event {
 }
 
 impl Clone for Event {
+    
+    /*
+     * 
+     */
     fn clone(&self) -> Event {
         Event {
             name: self.name.clone(),

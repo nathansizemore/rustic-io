@@ -112,6 +112,9 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
     }
 }
 
+/*
+ * 
+ */
 fn generate_socket_id() -> String {
     let mut rng = rand::task_rng();
     let mut string = String::new();
