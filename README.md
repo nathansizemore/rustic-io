@@ -1,26 +1,13 @@
 rustic-io [<img src="https://travis-ci.org/nathansizemore/rustic-io.png?branch=master">](https://travis-ci.org/nathansizemore/rustic-io)
 =========
 
-rustic-io is a simple websocket server library written in Rust, inspired by socket.io.  It aims to be a easy to implement, fast, concurrent websocket server library for text and binary messages.
-
-Borrows messaging implementation from [rust-ws](https://github.com/ehsanul/rust-ws)
-
-#### Current State
-Incomplete. JavaScript library is now available. Binary support coming soon.
-* **What you can currently do**
-  * JSON messaging between sockets
-  * JSON broadcasting to all sockets
+rustic-io is a simple websocket server library written in Rust.  It aims to be an easy to implement, fast, and concurrent websocket server library for text and binary messages.
 
 #### TODOs
-* **HTTP Header**
-  * Implement better parsing for incoming HTTP header
-    * Right now, all it cares about is the Sec-WebSocket-Key field
 * **Binary Messages**
-  * Implement the shit
+  * Needs implemented
 
 #### Example Usage
-
-##### On the Server
 ```rust
 #[deriving(Decodable, Encodable)]
 pub struct Foo {
@@ -29,14 +16,23 @@ pub struct Foo {
 
 fn main() {
     let mut server = rustic_io::new_server("127.0.0.1", "1338");
-    server.on("some_event", function_to_execute);
+    server.on("tell_just_me", tell_just_me);
+    server.on("tell_erry_body", tell_erry_body);
     rustic_io::start(server);
 }
 
-fn function_to_execute(data: json::Json, server: Server) {
+fn tell_just_me(data: json::Json, socket: Socket) {
+  let json_object = data.as_object().unwrap();
+  let msg = json_object.get(&String::from_str("msg")).unwrap().as_string().unwrap();
+    socket.send("echo", json::encode(&Foo {
+        msg: String::from_str(msg)
+    }));
+}
+
+fn tell_erry_body(data: json::Json, socket: Socket) {
     let json_object = data.as_object().unwrap();
-    let msg = json_object.find(&String::from_str("msg")).unwrap().as_string().unwrap();
-    server.broadcast("echo", json::encode(&Foo {
+    let msg = json_object.get(&String::from_str("msg")).unwrap().as_string().unwrap();
+    socket.broadcast("echo", json::encode(&Foo {
         msg: String::from_str(msg)
     }));
 }
@@ -44,4 +40,7 @@ fn function_to_execute(data: json::Json, server: Server) {
 
 #### Example Projects
 * [Echo Server](https://github.com/nathansizemore/rustic-io-echo-server) [<img src="https://travis-ci.org/nathansizemore/rustic-io-echo-server.png?branch=master">](https://travis-ci.org/nathansizemore/rustic-io-echo-server)
+
+#### Credits
+WebSocket payload implementation from [rust-ws](https://github.com/ehsanul/rust-ws)
   
