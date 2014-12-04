@@ -5,6 +5,12 @@
 name = "rustic-io"
 version = "0.2.0"
 authors = ["nathanrsizmore@gmail.com"]
+description = "A simple Websocket server library for text and binary messaging"
+respository = "https://github.com/nathansizemore/rustic-io"
+readme = "README.md"
+keywords = ["websocket", "web", "socket"]
+license = "MIT"
+
 
 [lib]
 name = "rustic-io"
