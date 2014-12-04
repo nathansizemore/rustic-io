@@ -29,7 +29,7 @@ use std::io::TcpStream;
 
 use super::serialize::json;
 use super::serialize::json::Json;
-use super::serialize::json::{ParseError, DecoderError, DecodeResult};
+use super::serialize::json::{ParserError, DecoderError, DecodeResult};
 
 use super::event::Event;
 use super::action::Action;
@@ -79,6 +79,8 @@ impl Socket {
         let (write_task_sender, write_task_receiver): (Sender<Message>, Receiver<Message>) = channel();
         self.to_write_task = write_task_sender;
 
+        // Socket out logic/write stream
+        // Non-blocking
         spawn(proc() {
             loop {
 
@@ -108,7 +110,6 @@ impl Socket {
             }
         });
 
-        // Blocking read on this stream
         let mut read_stream = self.stream.clone();
         loop {
             match Message::load(&mut read_stream) {
@@ -116,7 +117,7 @@ impl Socket {
                     match msg.payload {
                         Text(json_ptr) => {
 
-                            println!("Received: {}", (*json_ptr).as_slice());
+                            println!("vfvfvReceived: {}", (*json_ptr).as_slice());
 
                             let decode_result: DecodeResult<JsonMessage> = json::decode((*json_ptr).as_slice());                            
                             match decode_result {
@@ -163,6 +164,74 @@ impl Socket {
                 }
             }
         }
+
+        
+        // Socket in logic/read stream
+        // Blocking
+        // let self_clone = Socket {
+        //     id: self.id.clone(),
+        //     stream: self.stream.clone(),
+        //     to_event_loop: self.to_event_loop.clone(),
+        //     to_write_task: self.to_write_task.clone(),
+        //     events: self.events.clone()
+        // };
+        // let mut read_stream = self_clone.stream.clone();
+        // spawn(proc() {
+            
+        //     loop {
+        //         match Message::load(&mut read_stream) {
+        //             Ok(msg) => {
+        //                 match msg.payload {
+        //                     Text(json_ptr) => {
+
+        //                         println!("vfvfvReceived: {}", (*json_ptr).as_slice());
+
+        //                         let decode_result: DecodeResult<JsonMessage> = json::decode((*json_ptr).as_slice());                            
+        //                         match decode_result {
+        //                             Ok(json_msg) => {
+        //                                 for event in self.events.iter() {
+        //                                     if event.name == json_msg.event {
+        //                                         let data_as_json = json::from_str(json_msg.data.as_slice()).unwrap();
+        //                                         (event.execute)(data_as_json, self_clone.clone());
+        //                                         break;
+        //                                     }
+        //                                 }
+        //                             }
+        //                             Err(e) => {
+        //                                 match e {
+        //                                     DecoderError::ParseError(pe) => {
+        //                                         println!("ParseError decoding received json: {}", pe);
+        //                                     }
+        //                                     DecoderError::ExpectedError(s1, s2) => {
+        //                                         println!("ExpectedError decoding received json...");
+        //                                         println!("s1: {}", s1);
+        //                                         println!("s2: {}", s2);
+        //                                     }
+        //                                     DecoderError::MissingFieldError(s) => {
+        //                                         println!("MissingFieldError decoding received json...");
+        //                                     }
+        //                                     DecoderError::UnknownVariantError(s) => {
+        //                                         println!("UnknownVariantError decoding received json...");
+        //                                     }
+        //                                     DecoderError::ApplicationError(s) => {
+        //                                         println!("ApplicationError decoding received json...");
+        //                                     }
+        //                                 }
+        //                             }
+        //                         }
+        //                     }
+        //                     Binary(bin_ptr) => { /* TODO - Implement */ }
+        //                     Empty => { /* TODO - Implement */ }
+        //                 }
+        //             }
+        //             Err(e) => {
+        //                 fail_sender.send(1);
+        //                 println!("e.desc: {}", e.desc);
+        //                 panic!("Read stream closed");
+        //             }
+        //         }
+        //     }
+        // });
     }
 
     /*

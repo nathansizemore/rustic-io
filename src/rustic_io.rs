@@ -60,17 +60,8 @@ pub fn start(server: Server) {
     // Start the event loop
     let (action_sender, action_receiver): (Sender<Action>, Receiver<Action>) = channel();
     let (new_conn_sender, new_conn_receiver): (Sender<TcpStream>, Receiver<TcpStream>) = channel();
-
-    /*
-     * This is fucking retarded
-     * The closure below should be able to capture this variable.
-     * The compiler should know it is not used anywhere else and I should not have to clone it
-     * Now I have a un-used variable, new_conn_sender who's sole purpose was to get cloned...
-     */
-    
-    // End rant
-
     let event_list = server.events.clone();
+    
     spawn(proc() {
         eventloop::start(action_sender, action_receiver, new_conn_receiver, event_list)
     });

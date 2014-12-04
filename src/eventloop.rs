@@ -77,7 +77,9 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
                 });
 
                 // Start a new socket
-                socket.start(from_event_loop_recvr);
+                spawn(proc() {
+                    socket.start(from_event_loop_recvr);
+                });
             }
             Err(e) => { /* Dont care */ }
         }
@@ -98,6 +100,7 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
             Err(e) => {
                 match e {
                     TryRecvError::Disconnected => {
+                        println!("action_receiver disconnected...");
                         // Channel is disconnected, kill stuff
                         
                         // TODO - panic and start killing stuff
