@@ -7,7 +7,7 @@ version = "0.2.2"
 authors = ["nathanrsizmore@gmail.com"]
 description = "A simple Websocket server library for text and binary messaging"
 repository = "https://github.com/nathansizemore/rustic-io"
-readme = "README.md"
+readme = "./README.md"
 keywords = ["websocket", "web", "socket"]
 license = "MIT"
 
