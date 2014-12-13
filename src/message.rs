@@ -1,3 +1,7 @@
+// =========================================================================
+// Original implementation borrowed from: https://github.com/ehsanul/rust-ws
+// =========================================================================
+// 
 // Copyright (c) 2014 Ehsanul Hoque
 
 // Permission is hereby granted, free of charge, to any
@@ -23,6 +27,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
+// =========================================================================
 
 
 use std::io::{IoResult, TcpStream};
@@ -150,7 +155,7 @@ impl Message {
         };
 
         // Write out the type of data
-        try!(stream.write_u8(0b1000_0000 | self.mask as u8));
+        try!(stream.write_u8(0b1000_0000 | self.mask.clone() as u8));
 
         // Write out the length of the data
         if payload_length <= 125 {
@@ -193,4 +198,3 @@ impl Clone for Message {
         }
     }
 }
-

@@ -34,7 +34,7 @@ use super::serialize::json::{ParserError, DecoderError, DecodeResult};
 use super::event::Event;
 use super::action::Action;
 use super::message::Message;
-use super::message::Payload::{Text, Binary};
+use super::message::Payload::{Text, Binary, Empty};
 use super::message::Mask::{TextOp, BinaryOp};
 
 
