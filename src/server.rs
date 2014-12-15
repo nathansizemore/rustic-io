@@ -27,7 +27,6 @@
 
 extern crate serialize;
 
-use std::str;
 use self::serialize::json::Json;
 
 use super::event::Event;

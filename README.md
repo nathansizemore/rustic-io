@@ -1,11 +1,9 @@
 rustic-io [<img src="https://travis-ci.org/nathansizemore/rustic-io.png?branch=master">](https://travis-ci.org/nathansizemore/rustic-io)
 =========
 
-rustic-io is a simple websocket server library written in Rust.  It aims to be an easy to implement, fast, and concurrent websocket server library for text and binary messages.
+rustic-io is a simple websocket server library written in Rust.  It aims to be an easy to implement, fast, and concurrent websocket server library for event based messaging.
 
-#### TODOs
-* **Binary Messages**
-  * Needs implemented
+There was thought on binary support to match the protocol, but if that was supported, there would not be a way to parse functionality on event, because the message can either be text or binary.  There is no mixing of the two.  Currently, Vec<T> is supported in JSON ecoding/decoding through Rust, so all "binary" data should be passed as a buffer in your message struct.
 
 #### Example Usage
 ```rust

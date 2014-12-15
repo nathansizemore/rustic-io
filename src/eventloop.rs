@@ -25,7 +25,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 
-use std::str;
+//use std::str;
 use std::rand;
 use std::rand::Rng;
 use std::io::TcpStream;
@@ -77,7 +77,7 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
                 });
 
                 // Start a new socket
-                spawn(proc() {
+                spawn(move || {
                     socket.start(from_event_loop_recvr);
                 });
             }
@@ -89,15 +89,13 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
             Ok(action) => {
                 match action.event.as_slice() {
                     "broadcast" => {
-                        let mut counter: u8 = 1;
                         for msnger in socket_msngers.iter() {
                             msnger.to_socket.send(action.message.clone());
-                            counter += 1;
                         }
                     }
                     "drop_socket" => {
                         let mut counter = 0;
-                        let mut index = -1;
+                        let mut index: i32 = -1;
                         for msnger in socket_msngers.iter() {
                             if msnger.id.as_slice() == action.socket_id.as_slice() {
                                 index = counter;
@@ -107,7 +105,7 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
                         }
 
                         if index >= 0 {
-                            socket_msngers.remove(index);
+                            socket_msngers.remove(index as uint);
                         }
                     }
                     _ => { /* Do nothing */ }

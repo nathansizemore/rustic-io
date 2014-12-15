@@ -26,8 +26,8 @@
 
 
 use super::message::Message;
-use super::message::Payload::{Text, Binary};
-use super::message::Mask::{TextOp, BinaryOp};
+use super::message::Payload::Text;
+use super::message::Mask::TextOp;
 
 
 /*

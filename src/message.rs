@@ -39,7 +39,6 @@ use std::num;
 #[deriving(Clone)]
 pub enum Payload {
     Text(Box<String>),
-    Binary(Vec<u8>),
     Empty
 }
 
@@ -51,7 +50,6 @@ pub enum Payload {
 pub enum Mask {
     ContinuationOp = 0x0,
     TextOp = 0x1,
-    BinaryOp = 0x2,
     CloseOp = 0x8
 }
 
@@ -104,9 +102,6 @@ impl Message {
                                     Mask::TextOp => {
                                         Payload::Text(box String::from_utf8(payload_buf).unwrap())
                                     }
-                                    Mask::BinaryOp => {
-                                        Payload::Binary(payload_buf)
-                                    }
                                     Mask::CloseOp => {
                                         Payload::Empty
                                     }
@@ -150,7 +145,6 @@ impl Message {
         // Grab the length of the data being sent
         let payload_length = match self.payload {
             Payload::Text(ref p) => p.len(),
-            Payload::Binary(ref p) => p.len(),
             Payload::Empty => 0
         };
 
@@ -173,19 +167,13 @@ impl Message {
             Payload::Text(ref p) => {
                 try!(stream.write((*p).as_slice().as_bytes()))
             }
-            Payload::Binary(ref p) => {
-                try!(stream.write((*p).as_slice()))
-            }
             Payload::Empty => {
                 ()
             }
         }
 
         // Reset the stream
-        try!(stream.flush());
-
-        // TODO - handle Err shit
-        
+        try!(stream.flush());        
         return Ok(());
     }
 }

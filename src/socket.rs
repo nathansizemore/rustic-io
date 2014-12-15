@@ -28,14 +28,13 @@
 use std::io::TcpStream;
 
 use super::serialize::json;
-use super::serialize::json::Json;
-use super::serialize::json::{ParserError, DecoderError, DecodeResult};
+use super::serialize::json::{DecoderError, DecodeResult};
 
 use super::event::Event;
 use super::action::Action;
 use super::message::Message;
-use super::message::Payload::{Text, Binary, Empty};
-use super::message::Mask::{TextOp, BinaryOp};
+use super::message::Payload::{Text, Empty};
+use super::message::Mask::TextOp;
 
 
 /*
@@ -83,7 +82,7 @@ impl Socket {
 
         // Socket out logic/write stream
         // Non-blocking
-        spawn(proc() {
+        spawn(move || {
             loop {
 
                 // Check for fail message
@@ -163,7 +162,6 @@ impl Socket {
                                 }
                             }
                         }
-                        Binary(bin_ptr) => { /* TODO - Implement */ }
                         Empty => { /* TODO - Implement */ }
                     }
                 }

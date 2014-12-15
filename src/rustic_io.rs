@@ -32,7 +32,6 @@ use std::str;
 use std::io::{TcpListener, TcpStream};
 use std::io::{Listener, Acceptor};
 
-use self::socket::Socket;
 use self::server::Server;
 use self::action::Action;
 use self::httpheader::{RequestHeader, ReturnHeader};
@@ -63,7 +62,7 @@ pub fn start(server: Server) {
     let (new_conn_sender, new_conn_receiver): (Sender<TcpStream>, Receiver<TcpStream>) = channel();
     let event_list = server.events.clone();
     
-    spawn(proc() {
+    spawn(move || {
         eventloop::start(action_sender, action_receiver, new_conn_receiver, event_list)
     });
 
@@ -79,7 +78,7 @@ pub fn start(server: Server) {
         match stream {
             Ok(stream) => {
                 let new_conn_sender_clone = new_conn_sender.clone();
-                spawn(proc() {
+                spawn(move || {
                     process_new_tcp_connection(stream, new_conn_sender_clone)
                 })
             }
