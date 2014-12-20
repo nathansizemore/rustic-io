@@ -26,7 +26,7 @@
 
 
 extern crate serialize;
-extern crate "rust-crypto" as rust_crypto;
+extern crate "crypto" as rust_crypto;
 
 use std::str;
 use std::io::{TcpListener, TcpStream};
