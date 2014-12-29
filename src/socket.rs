@@ -25,6 +25,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 
+use std::thread::Thread;
 use std::io::TcpStream;
 
 use super::serialize::json;
@@ -82,7 +83,7 @@ impl Socket {
 
         // Socket out logic/write stream
         // Non-blocking
-        spawn(move || {
+        Thread::spawn(move || {
             loop {
 
                 // Check for fail message
@@ -97,7 +98,7 @@ impl Socket {
                             socket_id: my_id.clone()
                         };
                         to_event_loop.send(drop_socket);
-                        panic!("Write stream closed");
+                        break;
                     }
                     Err(e) => { /* Dont care */ }
                 }
@@ -118,7 +119,7 @@ impl Socket {
                     Err(e) => { /* Dont care */ }
                 }
             }
-        });
+        }).detach();
 
         // Socket in logic/read stream
         // Blocking
@@ -128,7 +129,7 @@ impl Socket {
                 Ok(msg) => {
                     match msg.payload {
                         Text(json_ptr) => {
-                            let decode_result: DecodeResult<JsonMessage> = json::decode((*json_ptr).as_slice());                            
+                            let decode_result: DecodeResult<JsonMessage> = json::decode((*json_ptr).as_slice());
                             match decode_result {
                                 Ok(json_msg) => {
                                     for event in self.events.iter() {
@@ -210,7 +211,7 @@ impl Socket {
             message: msg.clone(),
             socket_id: self.id.clone()
         };
-        
+
         self.to_event_loop.send(action);
     }
 }

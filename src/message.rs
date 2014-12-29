@@ -1,7 +1,7 @@
 // =========================================================================
 // Original implementation borrowed from: https://github.com/ehsanul/rust-ws
 // =========================================================================
-// 
+//
 // Copyright (c) 2014 Ehsanul Hoque
 
 // Permission is hereby granted, free of charge, to any
@@ -45,8 +45,7 @@ pub enum Payload {
 /*
  * Enum representing the various mask values for Websocets
  */
-#[deriving(FromPrimitive)]
-#[deriving(Clone)]
+#[deriving(FromPrimitive, Clone, Copy)]
 pub enum Mask {
     ContinuationOp = 0x0,
     TextOp = 0x1,
@@ -75,7 +74,7 @@ impl Message {
 
                 // Get the mask to determine type of data being sent
                 let mask = buf1[0] & 0b0000_1111;
-                let mask: Mask = num::from_u8(mask).unwrap();        
+                let mask: Mask = num::from_u8(mask).unwrap();
                 let pay_len = buf1[1] & 0b0111_1111;
 
                 // Determine length of the payload
@@ -134,7 +133,7 @@ impl Message {
                 println!("Error: {}", e);
                 return Err(e);
             }
-        }        
+        }
     }
 
     /*
@@ -173,7 +172,7 @@ impl Message {
         }
 
         // Reset the stream
-        try!(stream.flush());        
+        try!(stream.flush());
         return Ok(());
     }
 }

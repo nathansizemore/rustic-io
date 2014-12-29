@@ -30,6 +30,7 @@ use std::rand;
 use std::rand::Rng;
 use std::io::TcpStream;
 use std::comm::TryRecvError;
+use std::thread::Thread;
 
 use super::action::Action;
 use super::message::Message;
@@ -77,9 +78,9 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
                 });
 
                 // Start a new socket
-                spawn(move || {
+                Thread::spawn(move || {
                     socket.start(from_event_loop_recvr);
-                });
+                }).detach();
             }
             Err(e) => { /* Dont care */ }
         }
@@ -116,7 +117,7 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
                     TryRecvError::Disconnected => {
                         println!("action_receiver disconnected...");
                         // Channel is disconnected, kill stuff
-                        
+
                         // TODO - panic and start killing stuff
                     }
                     TryRecvError::Empty => { /* Dont care */ }
@@ -127,7 +128,7 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
 }
 
 /*
- * 
+ *
  */
 fn generate_socket_id() -> String {
     let mut rng = rand::task_rng();
@@ -138,13 +139,3 @@ fn generate_socket_id() -> String {
     }
     string
 }
-
-
-
-
-
-
-
-
-
-

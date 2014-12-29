@@ -29,6 +29,7 @@ extern crate serialize;
 extern crate "crypto" as rust_crypto;
 
 use std::str;
+use std::thread::Thread;
 use std::io::{TcpListener, TcpStream};
 use std::io::{Listener, Acceptor};
 
@@ -61,10 +62,10 @@ pub fn start(server: Server) {
     let (action_sender, action_receiver): (Sender<Action>, Receiver<Action>) = channel();
     let (new_conn_sender, new_conn_receiver): (Sender<TcpStream>, Receiver<TcpStream>) = channel();
     let event_list = server.events.clone();
-    
-    spawn(move || {
-        eventloop::start(action_sender, action_receiver, new_conn_receiver, event_list)
-    });
+
+    Thread::spawn(move || {
+        eventloop::start(action_sender, action_receiver, new_conn_receiver, event_list);
+    }).detach();
 
     // Start TCP Server
     let mut address = String::new();
@@ -78,9 +79,9 @@ pub fn start(server: Server) {
         match stream {
             Ok(stream) => {
                 let new_conn_sender_clone = new_conn_sender.clone();
-                spawn(move || {
+                Thread::spawn(move || {
                     process_new_tcp_connection(stream, new_conn_sender_clone)
-                })
+                }).detach();
             }
             Err(e) => {
                 println!("Error accepting incoming tcp connection...");
@@ -101,7 +102,7 @@ fn process_new_tcp_connection(mut stream: TcpStream, new_conn_sender: Sender<Tcp
     stream.read(&mut buffer).unwrap();
 
     match str::from_utf8(buffer.as_slice()) {
-        Some(header) => {
+        Ok(header) => {
             let request_header = RequestHeader::new(header);
             if request_header.is_valid() {
                 let return_header = ReturnHeader::new(request_header.sec_websocket_key.as_slice());
@@ -113,7 +114,6 @@ fn process_new_tcp_connection(mut stream: TcpStream, new_conn_sender: Sender<Tcp
                 }
             }
         }
-        None => { /* Don't care */ }
+    Err(e) => { /* Don't care */ }
     }
 }
-
