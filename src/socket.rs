@@ -27,9 +27,9 @@
 
 use std::thread::Thread;
 use std::io::TcpStream;
+use std::sync::mpsc::{channel, Sender, Receiver};
 
-use super::serialize::json;
-use super::serialize::json::{DecoderError, DecodeResult};
+use super::rustc_serialize::json::{self, Json, DecoderError, DecodeResult};
 
 use super::event::Event;
 use super::action::Action;
@@ -60,7 +60,7 @@ pub struct Socket {
  *      }
  * }
  */
-#[deriving(Decodable, Encodable)]
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct JsonMessage {
     event: String,
     data: String
@@ -134,7 +134,7 @@ impl Socket {
                                 Ok(json_msg) => {
                                     for event in self.events.iter() {
                                         if event.name == json_msg.event {
-                                            let data_as_json = json::from_str(json_msg.data.as_slice()).unwrap();
+                                            let data_as_json = Json::from_str(json_msg.data.as_slice()).unwrap();
                                             (event.execute)(data_as_json, self.clone());
                                             break;
                                         }

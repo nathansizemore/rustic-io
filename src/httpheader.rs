@@ -29,14 +29,14 @@
  * To conform to RFC - 6455 up to the point of allowing
  * Text/Binary messaging.  Covering all websocket connection
  * types is outside the intent of this module.
- * 
+ *
  * http://tools.ietf.org/html/rfc6455
  */
 
 
 use super::rust_crypto::digest::Digest;
 use super::rust_crypto::sha1::Sha1;
-use super::serialize::base64::{ToBase64, STANDARD};
+use super::rustc_serialize::base64::{ToBase64, STANDARD};
 
 
 /*
@@ -85,7 +85,7 @@ impl RequestHeader {
         };
 
         // TODO - Parse and get the values correctly
-        // 
+        //
         // This is all fucked up because it delimits off spaces
         // All the fields we really care about work with this method, but
         // it would be nice to make it actually find and parse correctly
@@ -119,7 +119,7 @@ impl RequestHeader {
 }
 
 impl ReturnHeader {
-    
+
     /*
      * Returns the WebSocket Protocol Accept Header
      *
@@ -136,12 +136,12 @@ impl ReturnHeader {
      * 4.) Return Base64 encoded bytes, not string
      */
     pub fn new(key: &str) -> ReturnHeader {
-        // Combine key and WebSocket Key API thing        
+        // Combine key and WebSocket Key API thing
         let mut pre_hash = String::from_str(key);
         pre_hash.push_str("258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
 
         // Get the SHA-1 Hash as bytes
-        let mut out = [0u8, ..20];
+        let mut out = [0u8; 20];
         ReturnHeader::sha1_hash(pre_hash.as_slice(), &mut out);
 
         // Base64 encode the buffer
@@ -178,4 +178,3 @@ impl ReturnHeader {
         sha.result(out);
     }
 }
-

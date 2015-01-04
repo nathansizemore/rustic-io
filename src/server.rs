@@ -25,12 +25,9 @@
 // DEALINGS IN THE SOFTWARE.
 
 
-extern crate serialize;
-
-use self::serialize::json::Json;
-
 use super::event::Event;
 use super::socket::Socket;
+use super::rustc_serialize::json::Json;
 
 /*
  * Struct representing a WebSocket server

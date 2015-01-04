@@ -25,11 +25,14 @@
 // DEALINGS IN THE SOFTWARE.
 
 
-extern crate serialize;
+#![feature(slicing_syntax, old_orphan_check)]
+
+extern crate "rustc-serialize" as rustc_serialize;
 extern crate "crypto" as rust_crypto;
 
 use std::str;
 use std::thread::Thread;
+use std::sync::mpsc::{channel, Sender, Receiver};
 use std::io::{TcpListener, TcpStream};
 use std::io::{Listener, Acceptor};
 
@@ -98,7 +101,7 @@ pub fn start(server: Server) {
  * Fails silently
  */
 fn process_new_tcp_connection(mut stream: TcpStream, new_conn_sender: Sender<TcpStream>) {
-    let mut buffer = [0u8, ..512]; // Incoming HTTP header size
+    let mut buffer = [0u8; 512]; // Incoming HTTP header size
     stream.read(&mut buffer).unwrap();
 
     match str::from_utf8(buffer.as_slice()) {

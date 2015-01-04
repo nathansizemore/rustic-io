@@ -25,12 +25,11 @@
 // DEALINGS IN THE SOFTWARE.
 
 
-//use std::str;
 use std::rand;
 use std::rand::Rng;
 use std::io::TcpStream;
-use std::comm::TryRecvError;
 use std::thread::Thread;
+use std::sync::mpsc::{channel, Sender, Receiver, TryRecvError};
 
 use super::action::Action;
 use super::message::Message;
@@ -131,7 +130,7 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
  *
  */
 fn generate_socket_id() -> String {
-    let mut rng = rand::task_rng();
+    let mut rng = rand::thread_rng();
     let mut string = String::new();
 
     for x in range(0i, 15i) {

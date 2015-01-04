@@ -36,7 +36,7 @@ use std::num;
 /*
  * Enum representing the data and type send with message
  */
-#[deriving(Clone)]
+#[derive(Clone)]
 pub enum Payload {
     Text(Box<String>),
     Empty
@@ -45,7 +45,7 @@ pub enum Payload {
 /*
  * Enum representing the various mask values for Websocets
  */
-#[deriving(FromPrimitive, Clone, Copy)]
+#[derive(FromPrimitive, Clone, Copy)]
 pub enum Mask {
     ContinuationOp = 0x0,
     TextOp = 0x1,

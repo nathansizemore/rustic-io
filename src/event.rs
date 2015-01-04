@@ -25,7 +25,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 
-use super::serialize::json::Json;
+use super::rustc_serialize::json::Json;
 
 use super::socket::Socket;
 
@@ -50,9 +50,9 @@ impl Event {
 }
 
 impl Clone for Event {
-    
+
     /*
-     * 
+     *
      */
     fn clone(&self) -> Event {
         Event {

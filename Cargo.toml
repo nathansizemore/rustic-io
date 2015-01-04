@@ -1,6 +1,6 @@
 [package]
 name = "rustic-io"
-version = "0.2.6"
+version = "0.2.7"
 authors = ["Nathan Sizemore <nathanrsizmore@gmail.com>"]
 description = "Websocket server library for event based messaging"
 repository = "https://github.com/nathansizemore/rustic-io"
@@ -12,9 +12,9 @@ license = "MIT"
 name = "rustic-io"
 path = "src/rustic_io.rs"
 
-[dependencies.rust-crypto]
-rust-crypto = "~0.2.5"
-#git = "https://github.com/dagenix/rust-crypto"
+[dependencies]
+rust-crypto = "0.2.8"
+rustc-serialize = "0.2.2"
 
 # cargo build
 [profile.dev]
