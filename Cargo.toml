@@ -13,8 +13,8 @@ name = "rustic-io"
 path = "src/rustic_io.rs"
 
 [dependencies]
-rust-crypto = "0.2.11"
-rustc-serialize = "0.2.5"
+rust-crypto = "*"
+rustc-serialize = "*"
 
 # cargo build
 [profile.dev]
