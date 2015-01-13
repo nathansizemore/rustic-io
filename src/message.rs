@@ -89,7 +89,7 @@ impl Message {
                     Ok(masking_key_vec) => {
                         // Grab the payload
                         let masking_key_buf = masking_key_vec.as_slice();
-                        match stream.read_exact(payload_length as uint) {
+                        match stream.read_exact(payload_length as usize) {
                             Ok(masked_payload_buf) => {
                                 let mut payload_buf = vec!();
                                 for (i, &octet) in masked_payload_buf.iter().enumerate() {

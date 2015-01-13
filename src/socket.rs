@@ -75,7 +75,7 @@ impl Socket {
     pub fn start(&mut self, from_event_loop: Receiver<Message>) {
 
         let mut write_stream = self.stream.clone();
-        let (fail_sender, fail_receiver): (Sender<uint>, Receiver<uint>) = channel();
+        let (fail_sender, fail_receiver): (Sender<usize>, Receiver<usize>) = channel();
         let (write_task_sender, write_task_receiver): (Sender<Message>, Receiver<Message>) = channel();
         self.to_write_task = write_task_sender;
         let my_id = self.id.clone();
@@ -119,7 +119,7 @@ impl Socket {
                     Err(e) => { /* Dont care */ }
                 }
             }
-        }).detach();
+        });
 
         // Socket in logic/read stream
         // Blocking
@@ -143,7 +143,7 @@ impl Socket {
                                 Err(e) => {
                                     match e {
                                         DecoderError::ParseError(pe) => {
-                                            println!("ParseError decoding received json: {}", pe);
+                                            println!("ParseError decoding received json: {:?}", pe);
                                         }
                                         DecoderError::ExpectedError(s1, s2) => {
                                             println!("ExpectedError decoding received json...");

@@ -79,7 +79,7 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
                 // Start a new socket
                 Thread::spawn(move || {
                     socket.start(from_event_loop_recvr);
-                }).detach();
+                });
             }
             Err(e) => { /* Dont care */ }
         }
@@ -105,7 +105,7 @@ pub fn start(action_sender: Sender<Action>, action_receiver: Receiver<Action>,
                         }
 
                         if index >= 0 {
-                            socket_msngers.remove(index as uint);
+                            socket_msngers.remove(index as usize);
                         }
                     }
                     _ => { /* Do nothing */ }
@@ -133,7 +133,7 @@ fn generate_socket_id() -> String {
     let mut rng = rand::thread_rng();
     let mut string = String::new();
 
-    for x in range(0i, 15i) {
+    for x in range(0, 15) {
         string.push(rng.gen::<char>());
     }
     string

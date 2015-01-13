@@ -25,7 +25,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 
-#![feature(slicing_syntax, old_orphan_check)]
+#![feature(slicing_syntax, old_orphan_check, box_syntax)]
 
 extern crate "rustc-serialize" as rustc_serialize;
 extern crate "crypto" as rust_crypto;
@@ -68,7 +68,7 @@ pub fn start(server: Server) {
 
     Thread::spawn(move || {
         eventloop::start(action_sender, action_receiver, new_conn_receiver, event_list);
-    }).detach();
+    });
 
     // Start TCP Server
     let mut address = String::new();
@@ -84,7 +84,7 @@ pub fn start(server: Server) {
                 let new_conn_sender_clone = new_conn_sender.clone();
                 Thread::spawn(move || {
                     process_new_tcp_connection(stream, new_conn_sender_clone)
-                }).detach();
+                });
             }
             Err(e) => {
                 println!("Error accepting incoming tcp connection...");
