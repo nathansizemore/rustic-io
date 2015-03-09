@@ -1,6 +1,8 @@
 rustic-io [<img src="https://travis-ci.org/nathansizemore/rustic-io.png?branch=master">](https://travis-ci.org/nathansizemore/rustic-io)
 =========
 
+Disclaimer: this project was just to help me get my feet wet with [Rust](https://github.com/rust-lang/rust). Do not plan on maintaining...
+
 rustic-io is a simple websocket server library written in Rust.  It aims to be an easy to implement, fast, and concurrent websocket server library for event based messaging.
 
 #### Example Usage
