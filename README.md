@@ -1,4 +1,4 @@
-rustic-io [<img src="https://travis-ci.org/nathansizemore/rustic-io.png?branch=master">](https://travis-ci.org/nathansizemore/rustic-io)
+rustic-io
 =========
 
 Disclaimer: this project was just to help me get my feet wet with [Rust](https://github.com/rust-lang/rust). Do not plan on maintaining...
@@ -37,7 +37,7 @@ fn function_to_execute(data: json::Json, socket: Socket) {
 ```
 
 #### Example Projects
-* [Echo Server](https://github.com/nathansizemore/rustic-io-echo-server) [<img src="https://travis-ci.org/nathansizemore/rustic-io-echo-server.png?branch=master">](https://travis-ci.org/nathansizemore/rustic-io-echo-server)
+* [Echo Server](https://github.com/nathansizemore/rustic-io-echo-server)
 
 #### Credits
 WebSocket payload implementation from [rust-ws](https://github.com/ehsanul/rust-ws)
